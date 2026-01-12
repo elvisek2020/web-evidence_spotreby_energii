@@ -2,6 +2,8 @@
 
 Moderní webová aplikace pro sledování a evidenci spotřeby energií (elektřina, plyn, voda). Aplikace umožňuje uživatelům zaznamenávat stav měřičů, zobrazovat historická data v tabulce a grafech, a automaticky doplňovat chybějící záznamy.
 
+![Screenshot aplikace](images/screen_spotreba.png)
+
 ## 📋 Popis
 
 Aplikace "Evidování spotřeby energií" je moderní webová aplikace postavená na Python FastAPI frameworku, která slouží pro evidenci a sledování spotřeby energií v domácnosti nebo podniku. Uživatelé mohou zaznamenávat stavy měřičů (elektroměr vysoký/nízký tarif, plynoměr, vodoměr), prohlížet historická data v přehledné tabulce a interaktivních grafech, a automaticky doplňovat chybějící záznamy pomocí inteligentní interpolace.
