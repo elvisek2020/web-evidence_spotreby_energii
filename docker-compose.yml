@@ -1,0 +1,26 @@
+services:
+  spotreba:
+    image: ghcr.io/elvisek2020/web-evidence_spotreby_energii:latest
+    container_name: spotreba-energii
+    hostname: spotreba-energii
+    restart: unless-stopped
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    networks:
+      - proxy_network
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  proxy_network:
+    external: true    

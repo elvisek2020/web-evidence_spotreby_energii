@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ app_title }}{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-gray-50">
+    <!-- Skip link -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-lg z-50">
+        Přejít na obsah
+    </a>
+    
+    <div class="max-w-7xl mx-auto">
+        <div class="min-h-screen bg-gray-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Hlavní nadpis a navigace na společném řádku -->
+                <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <!-- Hlavní nadpis -->
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ app_title }}</h1>
+                        <p class="text-gray-600">Sledování spotřeby energií (elektřina, plyn, voda)</p>
+                    </div>
+                    
+                    <!-- Navigace - tlačítka v box stylu -->
+                    <nav aria-label="Hlavní navigace">
+                        <div class="flex flex-wrap gap-4">
+                        <a href="/" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/' %}bg-blue-600 text-white{% else %}bg-white text-blue-700 border border-blue-300 hover:bg-blue-50{% endif %}" aria-current="{% if request.url.path == '/' %}page{% endif %}">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"/>
+                            </svg>
+                            Přehled
+                        </a>
+                        
+                        <a href="/evidovat" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/evidovat' %}bg-blue-600 text-white{% else %}bg-white text-blue-700 border border-blue-300 hover:bg-blue-50{% endif %}" aria-current="{% if request.url.path == '/evidovat' %}page{% endif %}">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                            Evidovat
+                        </a>
+                        
+                        <a href="/grafy" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/grafy' %}bg-blue-600 text-white{% else %}bg-white text-blue-700 border border-blue-300 hover:bg-blue-50{% endif %}" aria-current="{% if request.url.path == '/grafy' %}page{% endif %}">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                            Grafy
+                        </a>
+                        
+                        <a href="/missing-data" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/missing-data' %}bg-blue-600 text-white{% else %}bg-white text-blue-700 border border-blue-300 hover:bg-blue-50{% endif %}" aria-current="{% if request.url.path == '/missing-data' %}page{% endif %}">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Chybějící data
+                        </a>
+                        </div>
+                    </nav>
+                </div>
+                
+                <!-- Hlavní obsah -->
+                <main id="main-content">
+                    {% block content %}{% endblock %}
+                </main>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast notifikace -->
+    <div id="toast-container" class="fixed top-4 right-4 z-60 space-y-2" aria-live="polite"></div>
+    
+    <!-- JavaScript -->
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

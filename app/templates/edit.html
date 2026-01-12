@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}{{ app_title }} - Upravit{% endblock %}
+
+{% block content %}
+<section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Upravit záznam spotřeby</h2>
+    
+    <form id="edit-form" class="max-w-4xl mx-auto">
+        <input type="hidden" id="record-id" value="{{ spotreba.id }}">
+        
+        <div class="flex items-center gap-4 mb-6">
+            <label for="datum" class="w-64 text-sm font-medium text-gray-700 text-right">Datum *</label>
+            <div class="flex-1">
+                <input 
+                    type="date" 
+                    id="datum" 
+                    name="datum" 
+                    required 
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                    max="{{ today }}"
+                    value="{{ spotreba.datum.strftime('%Y-%m-%d') }}"
+                >
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4 mb-6">
+            <label for="elektromer_vysoky" class="w-64 text-sm font-medium text-gray-700 text-right">Elektroměr vysoký tarif (kWh) *</label>
+            <div class="flex-1">
+                <input 
+                    type="number" 
+                    id="elektromer_vysoky" 
+                    name="elektromer_vysoky" 
+                    required 
+                    min="0" 
+                    step="0.01"
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                    value="{{ spotreba.elektromer_vysoky }}"
+                >
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4 mb-6">
+            <label for="elektromer_nizky" class="w-64 text-sm font-medium text-gray-700 text-right">Elektroměr nízký tarif (kWh) *</label>
+            <div class="flex-1">
+                <input 
+                    type="number" 
+                    id="elektromer_nizky" 
+                    name="elektromer_nizky" 
+                    required 
+                    min="0" 
+                    step="0.01"
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                    value="{{ spotreba.elektromer_nizky }}"
+                >
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4 mb-6">
+            <label for="plynomer" class="w-64 text-sm font-medium text-gray-700 text-right">Plynoměr (m³) *</label>
+            <div class="flex-1">
+                <input 
+                    type="number" 
+                    id="plynomer" 
+                    name="plynomer" 
+                    required 
+                    min="0" 
+                    step="0.01"
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                    value="{{ spotreba.plynomer }}"
+                >
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4 mb-6">
+            <label for="vodomer" class="w-64 text-sm font-medium text-gray-700 text-right">Vodoměr (m³) *</label>
+            <div class="flex-1">
+                <input 
+                    type="number" 
+                    id="vodomer" 
+                    name="vodomer" 
+                    required 
+                    min="0" 
+                    step="0.01"
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                    value="{{ spotreba.vodomer }}"
+                >
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4 mb-6">
+            <label class="w-64 text-sm font-medium text-gray-700 text-right">Typ záznamu</label>
+            <div class="flex-1">
+                <label class="inline-flex items-center">
+                    <input 
+                        type="checkbox" 
+                        name="source" 
+                        value="true" 
+                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        {% if spotreba.source %}checked{% endif %}
+                    >
+                    <span class="ml-2 text-sm text-gray-700">Automaticky doplněný záznam</span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="flex justify-center space-x-4">
+            <a href="/" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Zpět na přehled
+            </a>
+            
+            <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Uložit změny
+            </button>
+        </div>
+    </form>
+</section>
+
+<!-- Informace o záznamu -->
+<section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-3 text-center">Informace o záznamu</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-center">
+        <div>
+            <span class="font-medium text-gray-700">ID záznamu:</span>
+            <span class="text-gray-600">{{ spotreba.id }}</span>
+        </div>
+        <div>
+            <span class="font-medium text-gray-700">Zdroj dat:</span>
+            <span class="text-gray-600">
+                {% if spotreba.source %}
+                    Automaticky doplněný
+                {% else %}
+                    Manuální
+                {% endif %}
+            </span>
+        </div>
+        <div>
+            <span class="font-medium text-gray-700">Elektroměr vysoký:</span>
+            <span class="text-gray-600">{{ "%.2f"|format(spotreba.elektromer_vysoky) }} kWh</span>
+        </div>
+        <div>
+            <span class="font-medium text-gray-700">Elektroměr nízký:</span>
+            <span class="text-gray-600">{{ "%.2f"|format(spotreba.elektromer_nizky) }} kWh</span>
+        </div>
+        <div>
+            <span class="font-medium text-gray-700">Plynoměr:</span>
+            <span class="text-gray-600">{{ "%.2f"|format(spotreba.plynomer) }} m³</span>
+        </div>
+        <div>
+            <span class="font-medium text-gray-700">Vodoměr:</span>
+            <span class="text-gray-600">{{ "%.2f"|format(spotreba.vodomer) }} m³</span>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Zpracování formuláře
+document.getElementById('edit-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const recordId = document.getElementById('record-id').value;
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Převod číselných hodnot
+    data.elektromer_vysoky = parseFloat(data.elektromer_vysoky);
+    data.elektromer_nizky = parseFloat(data.elektromer_nizky);
+    data.plynomer = parseFloat(data.plynomer);
+    data.vodomer = parseFloat(data.vodomer);
+    data.source = data.source === 'true';
+    
+    try {
+        const response = await fetch(`/api/spotreba/${recordId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            showToast('Záznam byl úspěšně aktualizován', 'success');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1500);
+        } else {
+            const error = await response.json();
+            showToast(`Chyba: ${error.detail}`, 'error');
+        }
+    } catch (error) {
+        showToast('Chyba při aktualizaci záznamu', 'error');
+    }
+});
+
+// Validace formuláře
+document.getElementById('edit-form').addEventListener('input', function(e) {
+    const input = e.target;
+    
+    if (input.type === 'number') {
+        if (input.value < 0) {
+            input.value = 0;
+        }
+    }
+});
+</script>
+{% endblock %}

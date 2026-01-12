@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+
+{% block title %}{{ app_title }} - Grafy{% endblock %}
+
+{% block content %}
+<section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+    <!-- Loading skeleton -->
+    <div id="loading-skeleton" class="hidden">
+        <div class="animate-pulse">
+            <div class="h-64 bg-gray-200 rounded-lg mb-4"></div>
+            <div class="h-64 bg-gray-200 rounded-lg mb-4"></div>
+            <div class="h-64 bg-gray-200 rounded-lg"></div>
+        </div>
+    </div>
+    
+    <!-- Kontrolky pro zapínání/vypínání grafů -->
+    <div class="mb-6">
+        <div class="flex flex-wrap gap-4 justify-center mb-4">
+            <label class="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-lg cursor-pointer hover:bg-blue-200 transition-colors">
+                <input type="checkbox" id="toggle-elektromer_vysoky" checked class="mr-2" onchange="toggleDataset('elektromer_vysoky')">
+                <span class="text-sm font-medium">Elektroměr vysoký tarif</span>
+            </label>
+            <label class="inline-flex items-center px-4 py-2 bg-red-100 text-red-800 rounded-lg cursor-pointer hover:bg-red-200 transition-colors">
+                <input type="checkbox" id="toggle-elektromer_nizky" checked class="mr-2" onchange="toggleDataset('elektromer_nizky')">
+                <span class="text-sm font-medium">Elektroměr nízký tarif</span>
+            </label>
+            <label class="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg cursor-pointer hover:bg-yellow-200 transition-colors">
+                <input type="checkbox" id="toggle-plynomer" checked class="mr-2" onchange="toggleDataset('plynomer')">
+                <span class="text-sm font-medium">Plynoměr</span>
+            </label>
+            <label class="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-lg cursor-pointer hover:bg-green-200 transition-colors">
+                <input type="checkbox" id="toggle-vodomer" checked class="mr-2" onchange="toggleDataset('vodomer')">
+                <span class="text-sm font-medium">Vodoměr</span>
+            </label>
+        </div>
+    </div>
+    
+    <!-- Hlavní graf -->
+    <div id="charts-container">
+        <div class="mb-6">
+            <canvas id="main-chart" style="height: 500px; width: 100%;"></canvas>
+        </div>
+    </div>
+    
+    <!-- Tlačítka pro přepínání typu grafu a časového období -->
+    <div class="flex flex-wrap justify-between items-center gap-4">
+        <!-- Levé tlačítka -->
+        <div class="flex flex-wrap gap-4">
+            <button onclick="toggleChartType()" class="inline-flex items-center px-4 py-2 bg-white text-blue-700 font-medium rounded-lg hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors border border-blue-200 shadow-sm" id="chart-type-btn">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                <span id="chart-type-text">Čárový graf</span>
+            </button>
+            <button onclick="toggleAllDatasets()" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors border border-gray-200 shadow-sm">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+                <span id="toggle-all-text">Vypnout vše</span>
+            </button>
+        </div>
+        
+        <!-- Pravé tlačítka -->
+        <div class="flex flex-wrap gap-4">
+            <button onclick="changePeriod('year')" id="period-year" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors">
+                Poslední rok
+            </button>
+            <button onclick="changePeriod('2years')" id="period-2years" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors border border-gray-300">
+                Dva roky
+            </button>
+            <button onclick="changePeriod('all')" id="period-all" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors border border-gray-300">
+                Všechno
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Nápověda -->
+<section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-3 text-center">Nápověda</h3>
+    <div class="space-y-2 text-sm text-gray-600 max-w-2xl mx-auto">
+        <p>• Grafy zobrazují kumulativní hodnoty měřičů (celkové stavy)</p>
+        <p>• Můžete zapínat/vypínat jednotlivé typy měřičů pomocí zaškrtávacích políček</p>
+        <p>• Přepínání mezi čárovým a sloupcovým grafem pomocí tlačítka vlevo dole</p>
+        <p>• Filtrování podle časového období pomocí tlačítek vpravo dole</p>
+        <p>• Automaticky doplněné záznamy jsou označeny v legendě</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let chartType = 'line'; // 'bar' nebo 'line'
+let mainChart = null; // Hlavní graf
+let chartData = null; // Uložení dat
+let currentPeriod = 'year'; // Aktuální časové období
+let datasetVisibility = {
+    'elektromer_vysoky': true,
+    'elektromer_nizky': true,
+    'plynomer': true,
+    'vodomer': true
+};
+
+// Funkce pro čekání na Chart.js
+let chartWaitAttempts = 0;
+const maxChartWaitAttempts = 50; // 5 sekund
+
+function waitForChart() {
+    if (typeof Chart !== 'undefined') {
+        console.log('Chart.js je načten, spouštím grafy...');
+        loadChartData();
+    } else {
+        chartWaitAttempts++;
+        if (chartWaitAttempts < maxChartWaitAttempts) {
+            console.log(`Čekám na Chart.js... (pokus ${chartWaitAttempts}/${maxChartWaitAttempts})`);
+            setTimeout(waitForChart, 100);
+        } else {
+            console.error('Chart.js se nepodařilo načíst po 5 sekundách!');
+            document.getElementById('charts-container').innerHTML = `
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Chyba při načítání knihovny</h3>
+                    <p class="text-gray-600">Chart.js se nepodařilo načíst. Zkuste obnovit stránku.</p>
+                    <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        Obnovit stránku
+                    </button>
+                </div>
+            `;
+        }
+    }
+}
+
+// Načtení dat při načtení stránky
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, čekám na Chart.js...');
+    waitForChart();
+});
+
+async function loadChartData() {
+    console.log('Načítání dat grafů...');
+    const loadingSkeleton = document.getElementById('loading-skeleton');
+    const chartsContainer = document.getElementById('charts-container');
+    
+    // Zobrazení loading skeletonu
+    loadingSkeleton.classList.remove('hidden');
+    chartsContainer.classList.add('hidden');
+    
+    try {
+        console.log('Fetching data from API...');
+        const response = await fetch(`/api/grafy/data?period=${currentPeriod}`);
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        chartData = await response.json();
+        console.log('Data loaded:', chartData);
+        
+        // Skrytí loading skeletonu
+        loadingSkeleton.classList.add('hidden');
+        chartsContainer.classList.remove('hidden');
+        
+        if (chartData.labels.length === 0) {
+            showNoDataMessage();
+            return;
+        }
+        
+        console.log('Creating main chart...');
+        createMainChart();
+        console.log('Main chart created successfully');
+        
+    } catch (error) {
+        console.error('Chyba při načítání dat grafů:', error);
+        loadingSkeleton.classList.add('hidden');
+        chartsContainer.classList.remove('hidden');
+        
+        // Zobrazení chybové zprávy
+        chartsContainer.innerHTML = `
+            <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Chyba při načítání dat</h3>
+                <p class="text-gray-600">Nepodařilo se načíst data pro grafy. Zkuste obnovit stránku.</p>
+                <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    Obnovit stránku
+                </button>
+            </div>
+        `;
+    }
+}
+
+function createMainChart() {
+    try {
+        // Kontrola, jestli je Chart.js načten
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js není načten!');
+            return;
+        }
+        
+        // Kontrola, jestli máme data
+        if (!chartData || !chartData.labels || chartData.labels.length === 0) {
+            console.error('Chybí data pro graf!');
+            return;
+        }
+        
+        const ctx = document.getElementById('main-chart').getContext('2d');
+        
+        // Zničení existujícího grafu
+        if (mainChart) {
+            mainChart.destroy();
+        }
+        
+        // Vytvoření datových sad
+        const datasets = [];
+        
+        // Elektroměr vysoký tarif
+        if (datasetVisibility.elektromer_vysoky && chartData.elektromer_vysoky) {
+            datasets.push(...createDataset('Elektroměr vysoký tarif (kWh)', chartData.elektromer_vysoky, chartData.source_flags, '#3B82F6'));
+        }
+        
+        // Elektroměr nízký tarif
+        if (datasetVisibility.elektromer_nizky && chartData.elektromer_nizky) {
+            datasets.push(...createDataset('Elektroměr nízký tarif (kWh)', chartData.elektromer_nizky, chartData.source_flags, '#EF4444'));
+        }
+        
+        // Plynoměr
+        if (datasetVisibility.plynomer && chartData.plynomer) {
+            datasets.push(...createDataset('Plynoměr (m³)', chartData.plynomer, chartData.source_flags, '#F59E0B'));
+        }
+        
+        // Vodoměr
+        if (datasetVisibility.vodomer && chartData.vodomer) {
+            datasets.push(...createDataset('Vodoměr (m³)', chartData.vodomer, chartData.source_flags, '#10B981'));
+        }
+        
+        // Kontrola, jestli máme nějaké datové sady
+        if (datasets.length === 0) {
+            console.warn('Žádné datové sady k zobrazení');
+            return;
+        }
+        
+        // Vytvoření nového grafu
+        mainChart = new Chart(ctx, {
+            type: chartType,
+            data: {
+                labels: chartData.labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Spotřeba energií',
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            top: 10,
+                            bottom: 20
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#ddd',
+                        borderWidth: 1,
+                        cornerRadius: 6,
+                        displayColors: true,
+                        callbacks: {
+                            title: function(context) {
+                                return context[0].label;
+                            },
+                            label: function(context) {
+                                const datasetLabel = context.dataset.label;
+                                const value = context.parsed.y;
+                                return datasetLabel + ': ' + (value !== null ? value.toFixed(2) : 'N/A');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Datum',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            font: {
+                                size: 10
+                            }
+                        },
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Spotřeba',
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
+                            }
+                        },
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                animation: {
+                    duration: 750,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Chyba při vytváření grafu:', error);
+    }
+}
+
+function createDataset(label, data, sourceFlags, color) {
+    // Zobrazení všech dat bez rozdělení na Odečet/Odhad
+    const chartData = data.map(value => value !== null ? value : undefined);
+    
+    return [
+        {
+            label: label,
+            data: chartData,
+            backgroundColor: color + '80', // 50% průhlednost
+            borderColor: color,
+            borderWidth: 2,
+            pointBackgroundColor: color,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            tension: 0.1,
+            spanGaps: false // Nevykresluje čáry přes chybějící data
+        }
+    ];
+}
+
+function toggleDataset(datasetName) {
+    console.log('Toggle dataset:', datasetName, 'current state:', datasetVisibility[datasetName]);
+    datasetVisibility[datasetName] = !datasetVisibility[datasetName];
+    console.log('New state:', datasetVisibility[datasetName]);
+    createMainChart();
+}
+
+function toggleAllDatasets() {
+    const allVisible = Object.values(datasetVisibility).every(v => v);
+    const newState = !allVisible;
+    
+    console.log('Toggle all datasets:', { allVisible, newState });
+    
+    Object.keys(datasetVisibility).forEach(key => {
+        datasetVisibility[key] = newState;
+        const checkbox = document.getElementById(`toggle-${key}`);
+        if (checkbox) {
+            checkbox.checked = newState;
+            console.log(`Updated checkbox ${key}:`, checkbox.checked);
+        } else {
+            console.error(`Checkbox not found: toggle-${key}`);
+        }
+    });
+    
+    const toggleAllText = document.getElementById('toggle-all-text');
+    if (toggleAllText) {
+        toggleAllText.textContent = newState ? 'Vypnout vše' : 'Zapnout vše';
+    }
+    
+    console.log('Dataset visibility after toggle:', datasetVisibility);
+    createMainChart();
+}
+
+function toggleChartType() {
+    chartType = chartType === 'bar' ? 'line' : 'bar';
+    const text = document.getElementById('chart-type-text');
+    
+    text.textContent = chartType === 'bar' ? 'Sloupcový graf' : 'Čárový graf';
+    
+    createMainChart();
+}
+
+function showNoDataMessage() {
+    const chartsContainer = document.getElementById('charts-container');
+    chartsContainer.innerHTML = `
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Žádná data k zobrazení</h3>
+            <p class="text-gray-600">Nejsou k dispozici žádná data pro vytvoření grafů.</p>
+        </div>
+    `;
+}
+
+
+// Funkce pro změnu časového období
+function changePeriod(period) {
+    currentPeriod = period;
+    
+    // Aktualizace vzhledu tlačítek (v pořadí: year, 2years, all)
+    const buttons = ['year', '2years', 'all'];
+    buttons.forEach(btn => {
+        const button = document.getElementById(`period-${btn}`);
+        if (btn === period) {
+            button.className = 'inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors';
+        } else {
+            button.className = 'inline-flex items-center px-4 py-2 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors border border-gray-300';
+        }
+    });
+    
+    // Načtení nových dat
+    loadChartData();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}{{ app_title }} - Evidovat{% endblock %}
+
+{% block content %}
+<!-- Hlavní boxík pro formulář -->
+<section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Přidat nový záznam spotřeby</h2>
+    
+    <form id="evidovat-form" class="max-w-4xl mx-auto">
+        <!-- Datum -->
+        <div class="flex items-center gap-4 mb-6">
+            <label for="datum" class="w-64 text-sm font-medium text-gray-700 text-right">Datum *</label>
+            <div class="flex-1">
+                <input 
+                    type="date" 
+                    id="datum" 
+                    name="datum" 
+                    required 
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                    max="{{ today }}"
+                >
+            </div>
+        </div>
+        
+        <!-- Elektroměr vysoký tarif -->
+        <div class="flex items-center gap-4 mb-6">
+            <label for="elektromer_vysoky" class="w-64 text-sm font-medium text-gray-700 text-right">Elektroměr vysoký tarif (kWh) *</label>
+            <div class="flex-1">
+                <input 
+                    type="number" 
+                    id="elektromer_vysoky" 
+                    name="elektromer_vysoky" 
+                    required 
+                    min="0" 
+                    step="0.01"
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                >
+            </div>
+        </div>
+        
+        <!-- Elektroměr nízký tarif -->
+        <div class="flex items-center gap-4 mb-6">
+            <label for="elektromer_nizky" class="w-64 text-sm font-medium text-gray-700 text-right">Elektroměr nízký tarif (kWh) *</label>
+            <div class="flex-1">
+                <input 
+                    type="number" 
+                    id="elektromer_nizky" 
+                    name="elektromer_nizky" 
+                    required 
+                    min="0" 
+                    step="0.01"
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                >
+            </div>
+        </div>
+        
+        <!-- Plynoměr -->
+        <div class="flex items-center gap-4 mb-6">
+            <label for="plynomer" class="w-64 text-sm font-medium text-gray-700 text-right">Plynoměr (m³) *</label>
+            <div class="flex-1">
+                <input 
+                    type="number" 
+                    id="plynomer" 
+                    name="plynomer" 
+                    required 
+                    min="0" 
+                    step="0.01"
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                >
+            </div>
+        </div>
+        
+        <!-- Vodoměr -->
+        <div class="flex items-center gap-4 mb-6">
+            <label for="vodomer" class="w-64 text-sm font-medium text-gray-700 text-right">Vodoměr (m³) *</label>
+            <div class="flex-1">
+                <input 
+                    type="number" 
+                    id="vodomer" 
+                    name="vodomer" 
+                    required 
+                    min="0" 
+                    step="0.01"
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                >
+            </div>
+        </div>
+        
+        
+        <!-- Tlačítka -->
+        <div class="flex justify-center">
+            <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors shadow-sm">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Uložit záznam
+            </button>
+        </div>
+    </form>
+</section>
+
+<!-- Nápověda -->
+<section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-3 text-center">Nápověda</h3>
+    <div class="space-y-2 text-sm text-gray-600 max-w-2xl mx-auto">
+        <p>• Všechna pole označená hvězdičkou (*) jsou povinná</p>
+        <p>• Datum nesmí být v budoucnosti</p>
+        <p>• Hodnoty měřičů musí být nezáporné čísla</p>
+        <p>• Záznamy označené jako "automaticky doplněné" budou mít hnědou barvu v tabulce</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Nastavení dnešního data jako výchozí
+document.getElementById('datum').value = new Date().toISOString().split('T')[0];
+
+// Zpracování formuláře
+document.getElementById('evidovat-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Převod číselných hodnot
+    data.elektromer_vysoky = parseFloat(data.elektromer_vysoky);
+    data.elektromer_nizky = parseFloat(data.elektromer_nizky);
+    data.plynomer = parseFloat(data.plynomer);
+    data.vodomer = parseFloat(data.vodomer);
+    data.source = data.source === 'true';
+    
+    try {
+        const response = await fetch('/api/spotreba', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            showToast('Záznam byl úspěšně uložen', 'success');
+            // Po úspěšném uložení přesměrovat na dashboard
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1500);
+        } else {
+            const error = await response.json();
+            showToast(`Chyba: ${error.detail}`, 'error');
+        }
+    } catch (error) {
+        showToast('Chyba při ukládání záznamu', 'error');
+    }
+});
+
+function resetForm() {
+    document.getElementById('evidovat-form').reset();
+    document.getElementById('datum').value = new Date().toISOString().split('T')[0];
+}
+
+// Validace formuláře
+document.getElementById('evidovat-form').addEventListener('input', function(e) {
+    const input = e.target;
+    
+    if (input.type === 'number') {
+        if (input.value < 0) {
+            input.value = 0;
+        }
+    }
+});
+</script>
+{% endblock %}

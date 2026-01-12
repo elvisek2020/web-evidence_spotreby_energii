@@ -1,0 +1,225 @@
+/* Komponentní třídy podle README-ui.md */
+@layer components {
+  .btn {
+    @apply inline-flex items-center font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2;
+  }
+  
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-300 shadow-sm;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-600 text-white hover:bg-gray-700 focus-visible:ring-gray-300 shadow-sm;
+  }
+  
+  .btn-outline {
+    @apply bg-white text-blue-700 border border-blue-200 hover:bg-blue-50 focus-visible:ring-blue-300 shadow-sm;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+  
+  .btn-md {
+    @apply px-4 py-2 text-sm;
+  }
+  
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+  
+  .input {
+    @apply w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500;
+  }
+  
+  .input-error {
+    @apply border-red-300 focus:ring-red-300 focus:border-red-500;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+  }
+}
+
+/* Vylepšené styly pro lepší UX */
+@layer utilities {
+  /* Hover efekty pro tabulky */
+  .table-row-hover {
+    @apply transition-colors duration-150;
+  }
+  
+  .table-row-hover:hover {
+    @apply bg-gray-50;
+  }
+  
+  /* Vylepšené tlačítka */
+  .btn-enhanced {
+    @apply transition-all duration-200 transform hover:scale-105 active:scale-95;
+  }
+  
+  /* Vylepšené karty */
+  .card-enhanced {
+    @apply transition-shadow duration-200 hover:shadow-md;
+  }
+  
+  /* Vylepšené inputy */
+  .input-enhanced {
+    @apply transition-all duration-200 focus:ring-2 focus:ring-blue-300 focus:border-blue-500;
+  }
+  
+  /* Vylepšené navigační tlačítka */
+  .nav-btn {
+    @apply transition-all duration-200 transform hover:scale-105 active:scale-95;
+  }
+  
+  .nav-btn.active {
+    @apply bg-blue-600 text-white shadow-lg;
+  }
+  
+  .nav-btn:not(.active) {
+    @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400;
+  }
+  
+  /* Vylepšené badge */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-manual {
+    @apply bg-blue-100 text-blue-800;
+  }
+  
+  .badge-auto {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+  
+  /* Vylepšené akční tlačítka */
+  .action-link {
+    @apply transition-colors duration-200 hover:underline;
+  }
+  
+  .action-link.edit {
+    @apply text-indigo-600 hover:text-indigo-900;
+  }
+  
+  .action-link.delete {
+    @apply text-red-600 hover:text-red-900;
+  }
+  
+  /* Vylepšené hodnoty v tabulce */
+  .table-value {
+    @apply font-medium text-gray-900;
+  }
+  
+  .table-diff {
+    @apply text-green-600 text-xs font-medium;
+  }
+  
+  /* Vylepšené filtry */
+  .filter-btn {
+    @apply transition-all duration-200 transform hover:scale-105 active:scale-95;
+  }
+  
+  .filter-btn.active {
+    @apply bg-blue-600 text-white shadow-lg;
+  }
+  
+  .filter-btn:not(.active) {
+    @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400;
+  }
+}
+
+/* Respektování prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse {
+    animation: none;
+  }
+  
+  .transition-colors {
+    transition: none;
+  }
+  
+  .transition-all {
+    transition: none;
+  }
+}
+
+/* Z-index hierarchie */
+.toast {
+  z-index: 60;
+}
+
+.modal {
+  z-index: 50;
+}
+
+.popover {
+  z-index: 20;
+}
+
+.card {
+  z-index: 10;
+}
+
+/* Focus styles pro lepší přístupnost */
+.focus-visible:focus-visible {
+  outline: 2px solid #3B82F6;
+  outline-offset: 2px;
+}
+
+/* Hover efekty pro lepší UX */
+.hover\:bg-gray-50:hover {
+  background-color: #F9FAFB;
+}
+
+.hover\:bg-blue-50:hover {
+  background-color: #EFF6FF;
+}
+
+.hover\:bg-blue-700:hover {
+  background-color: #1D4ED8;
+}
+
+.hover\:bg-gray-700:hover {
+  background-color: #374151;
+}
+
+/* Loading states */
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Error states */
+.error {
+  border-color: #EF4444;
+  background-color: #FEF2F2;
+}
+
+/* Success states */
+.success {
+  border-color: #10B981;
+  background-color: #F0FDF4;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none;
+  }
+  
+  .mobile-full {
+    width: 100%;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-break {
+    page-break-before: always;
+  }
+}
