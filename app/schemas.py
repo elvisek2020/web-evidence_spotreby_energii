@@ -2,20 +2,23 @@ from pydantic import BaseModel, Field, validator
 from datetime import date
 from typing import Optional
 
+MAX_METER_VALUE = 9_999_999.99
+
 class SpotrebaBase(BaseModel):
     """Základní schéma pro spotřebu"""
     datum: date
-    elektromer_vysoky: float = Field(..., ge=0, description="Stav elektroměru vysoký tarif v kWh")
-    elektromer_nizky: float = Field(..., ge=0, description="Stav elektroměru nízký tarif v kWh")
-    plynomer: float = Field(..., ge=0, description="Stav plynoměru v m³")
-    vodomer: float = Field(..., ge=0, description="Stav vodoměru v m³")
+    elektromer_vysoky: float = Field(..., ge=0, le=MAX_METER_VALUE, description="Stav elektroměru vysoký tarif v kWh")
+    elektromer_nizky: float = Field(..., ge=0, le=MAX_METER_VALUE, description="Stav elektroměru nízký tarif v kWh")
+    plynomer: float = Field(..., ge=0, le=MAX_METER_VALUE, description="Stav plynoměru v m³")
+    vodomer: float = Field(..., ge=0, le=MAX_METER_VALUE, description="Stav vodoměru v m³")
     source: bool = Field(default=False, description="Zdroj dat: False = manuální, True = automaticky doplněné")
 
     @validator('datum')
     def validate_datum(cls, v):
-        """Validace data - nesmí být v budoucnosti"""
         if v > date.today():
             raise ValueError('Datum nesmí být v budoucnosti')
+        if v < date(2000, 1, 1):
+            raise ValueError('Datum nesmí být před rokem 2000')
         return v
 
 class SpotrebaCreate(SpotrebaBase):
@@ -25,16 +28,18 @@ class SpotrebaCreate(SpotrebaBase):
 class SpotrebaUpdate(BaseModel):
     """Schéma pro aktualizaci záznamu"""
     datum: Optional[date] = None
-    elektromer_vysoky: Optional[float] = Field(None, ge=0)
-    elektromer_nizky: Optional[float] = Field(None, ge=0)
-    plynomer: Optional[float] = Field(None, ge=0)
-    vodomer: Optional[float] = Field(None, ge=0)
+    elektromer_vysoky: Optional[float] = Field(None, ge=0, le=MAX_METER_VALUE)
+    elektromer_nizky: Optional[float] = Field(None, ge=0, le=MAX_METER_VALUE)
+    plynomer: Optional[float] = Field(None, ge=0, le=MAX_METER_VALUE)
+    vodomer: Optional[float] = Field(None, ge=0, le=MAX_METER_VALUE)
     source: Optional[bool] = None
 
     @validator('datum')
     def validate_datum(cls, v):
         if v is not None and v > date.today():
             raise ValueError('Datum nesmí být v budoucnosti')
+        if v is not None and v < date(2000, 1, 1):
+            raise ValueError('Datum nesmí být před rokem 2000')
         return v
 
 class SpotrebaResponse(SpotrebaBase):

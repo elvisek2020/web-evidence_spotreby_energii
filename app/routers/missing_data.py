@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -6,6 +8,8 @@ from datetime import date, timedelta
 from ..database import get_db
 from ..models import Spotreba
 from ..schemas import MissingDataSuggestion, SpotrebaCreate
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -115,8 +119,14 @@ async def create_missing_data_suggestions(db: Session = Depends(get_db)):
             db.add(new_record)
             created_count += 1
     
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("Chyba při hromadném vytváření chybějících záznamů")
+        raise HTTPException(status_code=500, detail="Chyba při ukládání do databáze")
     
+    logger.info("Hromadně vytvořeno %d chybějících záznamů", created_count)
     return {
         "message": f"Bylo vytvořeno {created_count} chybějících záznamů",
         "created": created_count
@@ -145,9 +155,15 @@ async def create_single_missing_data(
     )
     
     db.add(new_record)
-    db.commit()
-    db.refresh(new_record)
+    try:
+        db.commit()
+        db.refresh(new_record)
+    except Exception:
+        db.rollback()
+        logger.exception("Chyba při vytváření chybějícího záznamu pro datum=%s", suggestion.datum)
+        raise HTTPException(status_code=500, detail="Chyba při ukládání do databáze")
     
+    logger.info("Vytvořen chybějící záznam id=%s, datum=%s", new_record.id, new_record.datum)
     return {
         "message": "Záznam byl úspěšně vytvořen",
         "record": new_record

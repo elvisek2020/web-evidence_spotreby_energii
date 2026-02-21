@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.params import Query
 from sqlalchemy.orm import Session
@@ -7,6 +9,8 @@ from datetime import date, timedelta
 from ..database import get_db
 from ..models import Spotreba
 from ..schemas import SpotrebaCreate, SpotrebaUpdate, SpotrebaResponse, SpotrebaWithDiff
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -94,12 +98,17 @@ async def create_spotreba(spotreba: SpotrebaCreate, db: Session = Depends(get_db
     if existing:
         raise HTTPException(status_code=400, detail="Záznam pro toto datum již existuje")
     
-    # Vytvoření nového záznamu
     db_spotreba = Spotreba(**spotreba.dict())
     db.add(db_spotreba)
-    db.commit()
-    db.refresh(db_spotreba)
+    try:
+        db.commit()
+        db.refresh(db_spotreba)
+    except Exception:
+        db.rollback()
+        logger.exception("Chyba při vytváření záznamu")
+        raise HTTPException(status_code=500, detail="Chyba při ukládání do databáze")
     
+    logger.info("Vytvořen záznam id=%s, datum=%s", db_spotreba.id, db_spotreba.datum)
     return db_spotreba
 
 @router.put("/spotreba/{spotreba_id}", response_model=SpotrebaResponse)
@@ -123,14 +132,19 @@ async def update_spotreba(
         if existing:
             raise HTTPException(status_code=400, detail="Záznam pro toto datum již existuje")
     
-    # Aktualizace pouze poskytnutých polí
     update_data = spotreba_update.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(db_spotreba, field, value)
     
-    db.commit()
-    db.refresh(db_spotreba)
+    try:
+        db.commit()
+        db.refresh(db_spotreba)
+    except Exception:
+        db.rollback()
+        logger.exception("Chyba při aktualizaci záznamu id=%s", spotreba_id)
+        raise HTTPException(status_code=500, detail="Chyba při ukládání do databáze")
     
+    logger.info("Aktualizován záznam id=%s", spotreba_id)
     return db_spotreba
 
 @router.delete("/spotreba/{spotreba_id}")
@@ -142,6 +156,12 @@ async def delete_spotreba(spotreba_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Záznam spotřeby nebyl nalezen")
     
     db.delete(db_spotreba)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("Chyba při mazání záznamu id=%s", spotreba_id)
+        raise HTTPException(status_code=500, detail="Chyba při mazání z databáze")
     
+    logger.info("Smazán záznam id=%s", spotreba_id)
     return {"message": "Záznam byl úspěšně smazán"}

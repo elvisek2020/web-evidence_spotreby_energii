@@ -213,6 +213,22 @@
   }
 }
 
+/* Dark mode overrides for table row hover */
+.dark .table-row-hover:hover {
+  background-color: rgba(55, 65, 81, 0.5);
+}
+
+/* Dark mode toast colors */
+.dark .bg-green-50 { background-color: rgba(6, 78, 59, 0.3); }
+.dark .bg-red-50 { background-color: rgba(127, 29, 29, 0.3); }
+.dark .bg-yellow-50 { background-color: rgba(113, 63, 18, 0.3); }
+.dark .bg-blue-50 { background-color: rgba(30, 58, 138, 0.3); }
+
+/* Dark mode color scheme for date inputs */
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
 /* Print styles */
 @media print {
   .no-print {

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from typing import List, Dict, Any, Optional
 from datetime import date, timedelta
+from collections import defaultdict
 from ..database import get_db
 from ..models import Spotreba
 from ..schemas import ChartData
@@ -73,6 +74,33 @@ async def get_chart_data(
         vodomer=vodomer,
         source_flags=source_flags
     )
+
+@router.get("/grafy/yoy")
+async def get_year_over_year(db: Session = Depends(get_db)):
+    """Meziroční porovnání spotřeby -- pro každý rok vypočítá roční spotřebu"""
+    records = db.query(Spotreba).order_by(Spotreba.datum.asc()).all()
+    if not records:
+        return {"years": []}
+
+    by_year: dict[int, list] = defaultdict(list)
+    for r in records:
+        by_year[r.datum.year].append(r)
+
+    years_data = []
+    for year in sorted(by_year.keys()):
+        recs = by_year[year]
+        first = recs[0]
+        last = recs[-1]
+        years_data.append({
+            "year": year,
+            "months_count": len(recs),
+            "elektromer_vysoky": round(last.elektromer_vysoky - first.elektromer_vysoky, 2),
+            "elektromer_nizky": round(last.elektromer_nizky - first.elektromer_nizky, 2),
+            "plynomer": round(last.plynomer - first.plynomer, 2),
+            "vodomer": round(last.vodomer - first.vodomer, 2),
+        })
+
+    return {"years": years_data}
 
 @router.get("/grafy/summary")
 async def get_chart_summary(db: Session = Depends(get_db)):

@@ -5,69 +5,69 @@
 {% block content %}
 
 <!-- Tabulka s daty -->
-<section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
     
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50 sticky top-0 z-10">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
                 <tr>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Datum</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Elektroměr vysoký (kWh)</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Elektroměr nízký (kWh)</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Plynoměr (m³)</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Vodoměr (m³)</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Zdroj</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Akce</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Datum</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Elektroměr vysoký (kWh)</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Elektroměr nízký (kWh)</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Plynoměr (m³)</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Vodoměr (m³)</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Zdroj</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Akce</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200" id="data-table-body">
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="data-table-body">
                 {% if spotreba_data %}
                     {% for record in spotreba_data %}
-                    <tr class="table-row-hover {% if record.source %}bg-gray-50{% endif %}">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr class="table-row-hover {% if record.source %}bg-gray-50 dark:bg-gray-700/50{% endif %}">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                             {{ record.datum.strftime('%d.%m.%Y') }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             <div class="flex flex-col">
-                                <span class="table-value">{{ "%.2f"|format(record.elektromer_vysoky) }}</span>
+                                <span class="table-value dark:text-white">{{ "%.2f"|format(record.elektromer_vysoky) }}</span>
                                 {% if record.diff_elektromer_vysoky is not none %}
-                                    <span class="table-diff {% if record.diff_elektromer_vysoky >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                    <span class="table-diff {% if record.diff_elektromer_vysoky >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
                                         {% if record.diff_elektromer_vysoky >= 0 %}+{% endif %}{{ "%.2f"|format(record.diff_elektromer_vysoky) }} kWh
                                     </span>
                                 {% endif %}
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             <div class="flex flex-col">
-                                <span class="table-value">{{ "%.2f"|format(record.elektromer_nizky) }}</span>
+                                <span class="table-value dark:text-white">{{ "%.2f"|format(record.elektromer_nizky) }}</span>
                                 {% if record.diff_elektromer_nizky is not none %}
-                                    <span class="table-diff {% if record.diff_elektromer_nizky >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                    <span class="table-diff {% if record.diff_elektromer_nizky >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
                                         {% if record.diff_elektromer_nizky >= 0 %}+{% endif %}{{ "%.2f"|format(record.diff_elektromer_nizky) }} kWh
                                     </span>
                                 {% endif %}
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             <div class="flex flex-col">
-                                <span class="table-value">{{ "%.2f"|format(record.plynomer) }}</span>
+                                <span class="table-value dark:text-white">{{ "%.2f"|format(record.plynomer) }}</span>
                                 {% if record.diff_plynomer is not none %}
-                                    <span class="table-diff {% if record.diff_plynomer >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                    <span class="table-diff {% if record.diff_plynomer >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
                                         {% if record.diff_plynomer >= 0 %}+{% endif %}{{ "%.2f"|format(record.diff_plynomer) }} m³
                                     </span>
                                 {% endif %}
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             <div class="flex flex-col">
-                                <span class="table-value">{{ "%.2f"|format(record.vodomer) }}</span>
+                                <span class="table-value dark:text-white">{{ "%.2f"|format(record.vodomer) }}</span>
                                 {% if record.diff_vodomer is not none %}
-                                    <span class="table-diff {% if record.diff_vodomer >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                    <span class="table-diff {% if record.diff_vodomer >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
                                         {% if record.diff_vodomer >= 0 %}+{% endif %}{{ "%.2f"|format(record.diff_vodomer) }} m³
                                     </span>
                                 {% endif %}
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             {% if record.source %}
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                                     Odhad
@@ -83,7 +83,7 @@
                                 <a href="/edit/{{ record.id }}" class="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 transition-colors">
                                     Upravit
                                 </a>
-                                <button onclick="deleteRecord({{ record.id }})" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 transition-colors">
+                                <button data-delete-id="{{ record.id }}" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 transition-colors">
                                     Smazat
                                 </button>
                             </div>
@@ -120,20 +120,20 @@
 </section>
 
 <!-- Statistiky -->
-<section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-    <h3 class="text-lg font-semibold text-gray-900 mb-3 text-center">Statistiky</h3>
+<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3 text-center">Statistiky</h3>
     <div id="stats-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="text-center">
-            <div class="text-2xl font-bold text-blue-600" id="total-records">-</div>
-            <div class="text-sm text-gray-600">Celkem záznamů</div>
+            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400" id="total-records">-</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">Celkem záznamů</div>
         </div>
         <div class="text-center">
-            <div class="text-2xl font-bold text-green-600" id="manual-records">-</div>
-            <div class="text-sm text-gray-600">Odečtů</div>
+            <div class="text-2xl font-bold text-green-600 dark:text-green-400" id="manual-records">-</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">Odečtů</div>
         </div>
         <div class="text-center">
-            <div class="text-2xl font-bold text-orange-600" id="auto-records">-</div>
-            <div class="text-sm text-gray-600">Odhadů</div>
+            <div class="text-2xl font-bold text-orange-600 dark:text-orange-400" id="auto-records">-</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">Odhadů</div>
         </div>
     </div>
 </section>
@@ -227,46 +227,56 @@ function updateTable(data) {
         return;
     }
     
+    const safeId = (v) => Number(v);
+    const safeFloat = (v) => Number(v).toFixed(2);
+    const diffSpan = (val, unit) => {
+        if (val === null || val === undefined) return '';
+        const n = Number(val);
+        const cls = n >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+        const sign = n >= 0 ? '+' : '';
+        return `<span class="table-diff ${cls}">${sign}${n.toFixed(2)} ${escapeHtml(unit)}</span>`;
+    };
+
     tbody.innerHTML = data.map(record => `
-        <tr class="table-row-hover ${record.source ? 'bg-gray-50' : ''}">
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                ${new Date(record.datum).toLocaleDateString('cs-CZ')}
+        <tr class="table-row-hover ${record.source ? 'bg-gray-50 dark:bg-gray-700/50' : ''}">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                ${escapeHtml(new Date(record.datum).toLocaleDateString('cs-CZ'))}
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex flex-col">
-                    <span class="table-value">${record.elektromer_vysoky.toFixed(2)}</span>
-                    ${record.diff_elektromer_vysoky !== null ? `<span class="table-diff ${record.diff_elektromer_vysoky >= 0 ? 'text-green-600' : 'text-red-600'}">${record.diff_elektromer_vysoky >= 0 ? '+' : ''}${record.diff_elektromer_vysoky.toFixed(2)} kWh</span>` : ''}
+                    <span class="table-value dark:text-white">${safeFloat(record.elektromer_vysoky)}</span>
+                    ${diffSpan(record.diff_elektromer_vysoky, 'kWh')}
                 </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex flex-col">
-                    <span class="table-value">${record.elektromer_nizky.toFixed(2)}</span>
-                    ${record.diff_elektromer_nizky !== null ? `<span class="table-diff ${record.diff_elektromer_nizky >= 0 ? 'text-green-600' : 'text-red-600'}">${record.diff_elektromer_nizky >= 0 ? '+' : ''}${record.diff_elektromer_nizky.toFixed(2)} kWh</span>` : ''}
+                    <span class="table-value dark:text-white">${safeFloat(record.elektromer_nizky)}</span>
+                    ${diffSpan(record.diff_elektromer_nizky, 'kWh')}
                 </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex flex-col">
-                    <span class="table-value">${record.plynomer.toFixed(2)}</span>
-                    ${record.diff_plynomer !== null ? `<span class="table-diff ${record.diff_plynomer >= 0 ? 'text-green-600' : 'text-red-600'}">${record.diff_plynomer >= 0 ? '+' : ''}${record.diff_plynomer.toFixed(2)} m³</span>` : ''}
+                    <span class="table-value dark:text-white">${safeFloat(record.plynomer)}</span>
+                    ${diffSpan(record.diff_plynomer, 'm³')}
                 </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex flex-col">
-                    <span class="table-value">${record.vodomer.toFixed(2)}</span>
-                    ${record.diff_vodomer !== null ? `<span class="table-diff ${record.diff_vodomer >= 0 ? 'text-green-600' : 'text-red-600'}">${record.diff_vodomer >= 0 ? '+' : ''}${record.diff_vodomer.toFixed(2)} m³</span>` : ''}
+                    <span class="table-value dark:text-white">${safeFloat(record.vodomer)}</span>
+                    ${diffSpan(record.diff_vodomer, 'm³')}
                 </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${record.source ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'}">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${record.source ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300' : 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'}">
                     ${record.source ? 'Odhad' : 'Odečet'}
                 </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <div class="flex space-x-3">
-                    <a href="/edit/${record.id}" class="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 transition-colors">
+                    <a href="/edit/${safeId(record.id)}" class="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 transition-colors">
                         Upravit
                     </a>
-                    <button onclick="deleteRecord(${record.id})" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 transition-colors">
+                    <button data-delete-id="${safeId(record.id)}" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 transition-colors">
                         Smazat
                     </button>
                 </div>
@@ -276,76 +286,27 @@ function updateTable(data) {
 }
 
 async function deleteRecord(id) {
-    if (!confirm('Opravdu chcete smazat tento záznam?')) {
-        return;
+    if (!confirm('Opravdu chcete smazat tento záznam?')) return;
+    
+    const btn = document.querySelector(`[data-delete-id="${id}"]`);
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Mažu...';
     }
     
-    // Zobrazení loading stavu
-    const tbody = document.getElementById('data-table-body');
-    const originalContent = tbody.innerHTML;
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="7" class="px-6 py-16 text-center">
-                <div class="flex flex-col items-center">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mb-4"></div>
-                    <p class="text-gray-500">Mazání záznamu...</p>
-                </div>
-            </td>
-        </tr>
-    `;
-    
     try {
-        const response = await fetch(`/api/spotreba/${id}`, {
-            method: 'DELETE'
-        });
+        const response = await fetch(`/api/spotreba/${id}`, { method: 'DELETE' });
         
         if (response.ok) {
             showToast('Záznam byl úspěšně smazán', 'success');
-            // Po smazání načti aktuální stránku
             loadData(currentPage);
         } else {
             showToast('Chyba při mazání záznamu', 'error');
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="px-6 py-16 text-center">
-                        <div class="flex flex-col items-center">
-                            <svg class="w-12 h-12 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <h3 class="text-lg font-medium text-gray-900 mb-2">Chyba při mazání záznamu</h3>
-                            <p class="text-gray-500 mb-4">Zkuste to znovu nebo kontaktujte podporu</p>
-                            <button onclick="loadData()" class="btn-enhanced inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors shadow-sm">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                </svg>
-                                Zkusit znovu
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
+            if (btn) { btn.disabled = false; btn.textContent = 'Smazat'; }
         }
     } catch (error) {
         showToast('Chyba při mazání záznamu', 'error');
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="7" class="px-6 py-16 text-center">
-                    <div class="flex flex-col items-center">
-                        <svg class="w-12 h-12 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">Chyba při mazání záznamu</h3>
-                        <p class="text-gray-500 mb-4">Zkuste to znovu nebo kontaktujte podporu</p>
-                        <button onclick="loadData()" class="btn-enhanced inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors shadow-sm">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                            </svg>
-                            Zkusit znovu
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
+        if (btn) { btn.disabled = false; btn.textContent = 'Smazat'; }
     }
 }
 
@@ -478,9 +439,18 @@ async function loadStats() {
     }
 }
 
-// Načti data při načtení stránky
-document.addEventListener('DOMContentLoaded', function() {
-    loadData();
+// Event delegation for delete buttons
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-delete-id]');
+    if (btn) {
+        const id = Number(btn.dataset.deleteId);
+        if (id) deleteRecord(id);
+    }
+});
+
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadTotalCount();
+    updatePagination();
     loadStats();
 });
 </script>

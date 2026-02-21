@@ -4,20 +4,20 @@
 
 {% block content %}
 <!-- Hlavní boxík pro formulář -->
-<section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-    <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Přidat nový záznam spotřeby</h2>
+<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Přidat nový záznam spotřeby</h2>
     
     <form id="evidovat-form" class="max-w-4xl mx-auto">
         <!-- Datum -->
         <div class="flex items-center gap-4 mb-6">
-            <label for="datum" class="w-64 text-sm font-medium text-gray-700 text-right">Datum *</label>
+            <label for="datum" class="w-64 text-sm font-medium text-gray-700 dark:text-gray-300 text-right">Datum *</label>
             <div class="flex-1">
                 <input 
                     type="date" 
                     id="datum" 
                     name="datum" 
                     required 
-                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     max="{{ today }}"
                 >
             </div>
@@ -25,7 +25,7 @@
         
         <!-- Elektroměr vysoký tarif -->
         <div class="flex items-center gap-4 mb-6">
-            <label for="elektromer_vysoky" class="w-64 text-sm font-medium text-gray-700 text-right">Elektroměr vysoký tarif (kWh) *</label>
+            <label for="elektromer_vysoky" class="w-64 text-sm font-medium text-gray-700 dark:text-gray-300 text-right">Elektroměr vysoký tarif (kWh) *</label>
             <div class="flex-1">
                 <input 
                     type="number" 
@@ -34,14 +34,15 @@
                     required 
                     min="0" 
                     step="0.01"
-                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    {% if latest %}value="{{ latest.elektromer_vysoky }}"{% endif %}
                 >
             </div>
         </div>
         
         <!-- Elektroměr nízký tarif -->
         <div class="flex items-center gap-4 mb-6">
-            <label for="elektromer_nizky" class="w-64 text-sm font-medium text-gray-700 text-right">Elektroměr nízký tarif (kWh) *</label>
+            <label for="elektromer_nizky" class="w-64 text-sm font-medium text-gray-700 dark:text-gray-300 text-right">Elektroměr nízký tarif (kWh) *</label>
             <div class="flex-1">
                 <input 
                     type="number" 
@@ -50,14 +51,15 @@
                     required 
                     min="0" 
                     step="0.01"
-                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    {% if latest %}value="{{ latest.elektromer_nizky }}"{% endif %}
                 >
             </div>
         </div>
         
         <!-- Plynoměr -->
         <div class="flex items-center gap-4 mb-6">
-            <label for="plynomer" class="w-64 text-sm font-medium text-gray-700 text-right">Plynoměr (m³) *</label>
+            <label for="plynomer" class="w-64 text-sm font-medium text-gray-700 dark:text-gray-300 text-right">Plynoměr (m³) *</label>
             <div class="flex-1">
                 <input 
                     type="number" 
@@ -66,14 +68,15 @@
                     required 
                     min="0" 
                     step="0.01"
-                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    {% if latest %}value="{{ latest.plynomer }}"{% endif %}
                 >
             </div>
         </div>
         
         <!-- Vodoměr -->
         <div class="flex items-center gap-4 mb-6">
-            <label for="vodomer" class="w-64 text-sm font-medium text-gray-700 text-right">Vodoměr (m³) *</label>
+            <label for="vodomer" class="w-64 text-sm font-medium text-gray-700 dark:text-gray-300 text-right">Vodoměr (m³) *</label>
             <div class="flex-1">
                 <input 
                     type="number" 
@@ -82,7 +85,8 @@
                     required 
                     min="0" 
                     step="0.01"
-                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500"
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    {% if latest %}value="{{ latest.vodomer }}"{% endif %}
                 >
             </div>
         </div>
@@ -101,13 +105,15 @@
 </section>
 
 <!-- Nápověda -->
-<section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-    <h3 class="text-lg font-semibold text-gray-900 mb-3 text-center">Nápověda</h3>
-    <div class="space-y-2 text-sm text-gray-600 max-w-2xl mx-auto">
+<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3 text-center">Nápověda</h3>
+    <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
         <p>• Všechna pole označená hvězdičkou (*) jsou povinná</p>
         <p>• Datum nesmí být v budoucnosti</p>
         <p>• Hodnoty měřičů musí být nezáporné čísla</p>
-        <p>• Záznamy označené jako "automaticky doplněné" budou mít hnědou barvu v tabulce</p>
+        {% if latest %}
+        <p>• Hodnoty jsou předvyplněny z posledního záznamu ({{ latest.datum.strftime('%d.%m.%Y') }}) -- aktualizujte na nové stavy</p>
+        {% endif %}
     </div>
 </section>
 {% endblock %}
@@ -121,10 +127,14 @@ document.getElementById('datum').value = new Date().toISOString().split('T')[0];
 document.getElementById('evidovat-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>Ukládám...';
+    
     const formData = new FormData(this);
     const data = Object.fromEntries(formData.entries());
     
-    // Převod číselných hodnot
     data.elektromer_vysoky = parseFloat(data.elektromer_vysoky);
     data.elektromer_nizky = parseFloat(data.elektromer_nizky);
     data.plynomer = parseFloat(data.plynomer);
@@ -134,24 +144,23 @@ document.getElementById('evidovat-form').addEventListener('submit', async functi
     try {
         const response = await fetch('/api/spotreba', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
         
         if (response.ok) {
             showToast('Záznam byl úspěšně uložen', 'success');
-            // Po úspěšném uložení přesměrovat na dashboard
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 1500);
+            setTimeout(() => { window.location.href = '/'; }, 500);
         } else {
             const error = await response.json();
-            showToast(`Chyba: ${error.detail}`, 'error');
+            showToast(`Chyba: ${escapeHtml(error.detail)}`, 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
         }
     } catch (error) {
         showToast('Chyba při ukládání záznamu', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
     }
 });
 

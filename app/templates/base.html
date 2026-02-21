@@ -5,70 +5,84 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ app_title }}{% endblock %}</title>
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Custom CSS -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <script>
+        if (localStorage.getItem('darkMode') === 'true' ||
+            (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
     <link rel="stylesheet" href="/static/css/style.css">
-    
-    <!-- Alpine.js -->
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.8/dist/cdn.min.js"></script>
     
     {% block head %}{% endblock %}
 </head>
-<body class="min-h-screen bg-gray-50">
+<body class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
     <!-- Skip link -->
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-lg z-50">
         Přejít na obsah
     </a>
     
     <div class="max-w-7xl mx-auto">
-        <div class="min-h-screen bg-gray-50">
+        <div class="min-h-screen">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <!-- Hlavní nadpis a navigace na společném řádku -->
                 <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <!-- Hlavní nadpis -->
                     <div>
-                        <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ app_title }}</h1>
-                        <p class="text-gray-600">Sledování spotřeby energií (elektřina, plyn, voda)</p>
+                        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">{{ app_title }}</h1>
+                        <p class="text-gray-600 dark:text-gray-400">Sledování spotřeby energií (elektřina, plyn, voda)</p>
                     </div>
                     
-                    <!-- Navigace - tlačítka v box stylu -->
-                    <nav aria-label="Hlavní navigace">
-                        <div class="flex flex-wrap gap-4">
-                        <a href="/" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/' %}bg-blue-600 text-white{% else %}bg-white text-blue-700 border border-blue-300 hover:bg-blue-50{% endif %}" aria-current="{% if request.url.path == '/' %}page{% endif %}">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"/>
-                            </svg>
-                            Přehled
-                        </a>
+                    <!-- Navigace + dark mode toggle -->
+                    <div class="flex items-center gap-4">
+                        <nav aria-label="Hlavní navigace">
+                            <div class="flex flex-wrap gap-4">
+                            <a href="/" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/' %}bg-blue-600 text-white{% else %}bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600{% endif %}" aria-current="{% if request.url.path == '/' %}page{% endif %}">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"/>
+                                </svg>
+                                Přehled
+                            </a>
+                            
+                            <a href="/evidovat" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/evidovat' %}bg-blue-600 text-white{% else %}bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600{% endif %}" aria-current="{% if request.url.path == '/evidovat' %}page{% endif %}">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Evidovat
+                            </a>
+                            
+                            <a href="/grafy" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/grafy' %}bg-blue-600 text-white{% else %}bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600{% endif %}" aria-current="{% if request.url.path == '/grafy' %}page{% endif %}">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                </svg>
+                                Grafy
+                            </a>
+                            
+                            <a href="/missing-data" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/missing-data' %}bg-blue-600 text-white{% else %}bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600{% endif %}" aria-current="{% if request.url.path == '/missing-data' %}page{% endif %}">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Chybějící data
+                            </a>
+                            </div>
+                        </nav>
                         
-                        <a href="/evidovat" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/evidovat' %}bg-blue-600 text-white{% else %}bg-white text-blue-700 border border-blue-300 hover:bg-blue-50{% endif %}" aria-current="{% if request.url.path == '/evidovat' %}page{% endif %}">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        <!-- Dark mode toggle -->
+                        <button id="dark-mode-toggle" type="button" class="p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors" aria-label="Přepnout tmavý/světlý režim">
+                            <svg class="w-5 h-5 text-gray-700 dark:text-gray-300 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
                             </svg>
-                            Evidovat
-                        </a>
-                        
-                        <a href="/grafy" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/grafy' %}bg-blue-600 text-white{% else %}bg-white text-blue-700 border border-blue-300 hover:bg-blue-50{% endif %}" aria-current="{% if request.url.path == '/grafy' %}page{% endif %}">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            <svg class="w-5 h-5 text-gray-700 dark:text-gray-300 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                             </svg>
-                            Grafy
-                        </a>
-                        
-                        <a href="/missing-data" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/missing-data' %}bg-blue-600 text-white{% else %}bg-white text-blue-700 border border-blue-300 hover:bg-blue-50{% endif %}" aria-current="{% if request.url.path == '/missing-data' %}page{% endif %}">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            Chybějící data
-                        </a>
-                        </div>
-                    </nav>
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Hlavní obsah -->
@@ -84,6 +98,13 @@
     
     <!-- JavaScript -->
     <script src="/static/js/app.js"></script>
+    <script>
+        document.getElementById('dark-mode-toggle').addEventListener('click', function() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', isDark);
+            window.dispatchEvent(new CustomEvent('darkmodechange', { detail: { dark: isDark } }));
+        });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
