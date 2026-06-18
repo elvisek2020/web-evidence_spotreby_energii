@@ -91,6 +91,22 @@
             </div>
         </div>
         
+        <!-- FVE -->
+        <div class="flex items-center gap-4 mb-6">
+            <label for="fve" class="w-64 text-sm font-medium text-gray-700 dark:text-gray-300 text-right">Výroba FVE (kWh)</label>
+            <div class="flex-1">
+                <input 
+                    type="number" 
+                    id="fve" 
+                    name="fve" 
+                    min="0" 
+                    step="0.01"
+                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    {% if latest and latest.fve is not none %}value="{{ latest.fve }}"{% else %}value="0"{% endif %}
+                >
+            </div>
+        </div>
+        
         
         <!-- Tlačítka -->
         <div class="flex justify-center">
@@ -139,6 +155,7 @@ document.getElementById('evidovat-form').addEventListener('submit', async functi
     data.elektromer_nizky = parseFloat(data.elektromer_nizky);
     data.plynomer = parseFloat(data.plynomer);
     data.vodomer = parseFloat(data.vodomer);
+    data.fve = data.fve ? parseFloat(data.fve) : 0;
     data.source = data.source === 'true';
     
     try {

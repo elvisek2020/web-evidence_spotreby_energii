@@ -43,6 +43,7 @@ async def get_spotreba_list(
             "elektromer_nizky": record.elektromer_nizky,
             "plynomer": record.plynomer,
             "vodomer": record.vodomer,
+            "fve": record.fve or 0,
             "source": record.source,
             "diff_elektromer_vysoky": None,
             "diff_elektromer_nizky": None,

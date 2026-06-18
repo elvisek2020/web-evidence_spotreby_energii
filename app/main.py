@@ -39,6 +39,17 @@ if ALLOWED_ORIGINS:
         allow_headers=["Content-Type"],
     )
 
+@app.on_event("startup")
+def ensure_schema():
+    from .database import DB_DATABASE
+    with engine.begin() as conn:
+        exists = conn.execute(text(
+            "SELECT COUNT(*) FROM information_schema.columns "
+            "WHERE table_schema=:db AND table_name='spotreba' AND column_name='fve'"
+        ), {"db": DB_DATABASE}).scalar()
+        if not exists:
+            conn.execute(text("ALTER TABLE spotreba ADD COLUMN fve FLOAT NULL DEFAULT 0"))
+            logger.info("Migrace: přidán sloupec fve")
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):

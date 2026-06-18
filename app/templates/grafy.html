@@ -36,6 +36,10 @@
                 <input type="checkbox" id="toggle-vodomer" checked class="mr-2" onchange="toggleDataset('vodomer')">
                 <span class="text-sm font-medium">Vodoměr</span>
             </label>
+            <label class="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-800 rounded-lg cursor-pointer hover:bg-purple-200 transition-colors">
+                <input type="checkbox" id="toggle-fve" checked class="mr-2" onchange="toggleDataset('fve')">
+                <span class="text-sm font-medium">Výroba FVE</span>
+            </label>
         </div>
     </div>
     
@@ -50,13 +54,22 @@
     <div class="flex flex-wrap justify-between items-center gap-4">
         <!-- Levé tlačítka -->
         <div class="flex flex-wrap gap-4">
-            <button onclick="toggleChartType()" class="inline-flex items-center px-4 py-2 bg-white text-blue-700 font-medium rounded-lg hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors border border-blue-200 shadow-sm" id="chart-type-btn">
+            <div class="inline-flex rounded-md shadow-sm" role="group">
+                <button onclick="changeDataMode('diff')" id="mode-diff" class="px-4 py-2 text-sm font-medium bg-blue-600 text-white border border-blue-600 rounded-l-lg hover:bg-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-300 transition-colors">
+                    Měsíční spotřeba
+                </button>
+                <button onclick="changeDataMode('cumulative')" id="mode-cumulative" class="px-4 py-2 text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-300 transition-colors">
+                    Celkové stavy
+                </button>
+            </div>
+            
+            <button onclick="toggleChartType()" class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 font-medium rounded-lg hover:bg-blue-50 dark:hover:bg-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors border border-blue-200 dark:border-gray-600 shadow-sm" id="chart-type-btn">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>
-                <span id="chart-type-text">Čárový graf</span>
+                <span id="chart-type-text">Sloupcový graf</span>
             </button>
-            <button onclick="toggleAllDatasets()" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors border border-gray-200 shadow-sm">
+            <button onclick="toggleAllDatasets()" class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors border border-gray-200 dark:border-gray-600 shadow-sm">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                 </svg>
@@ -93,7 +106,8 @@
 <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3 text-center">Nápověda</h3>
     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-        <p>• Grafy zobrazují kumulativní hodnoty měřičů (celkové stavy)</p>
+        <p>• Grafy výchozím nastavení zobrazují skutečnou měsíční spotřebu (přírůstky)</p>
+        <p>• Můžete přepnout na zobrazení celkových stavů měřičů (kumulativní hodnoty)</p>
         <p>• Můžete zapínat/vypínat jednotlivé typy měřičů pomocí zaškrtávacích políček</p>
         <p>• Přepínání mezi čárovým a sloupcovým grafem pomocí tlačítka vlevo dole</p>
         <p>• Filtrování podle časového období pomocí tlačítek vpravo dole</p>
@@ -104,7 +118,8 @@
 
 {% block scripts %}
 <script>
-let chartType = 'line'; // 'bar' nebo 'line'
+let dataMode = 'diff'; // 'diff' nebo 'cumulative'
+let chartType = 'bar'; // 'bar' nebo 'line'
 let mainChart = null; // Hlavní graf
 let chartData = null; // Uložení dat
 let currentPeriod = 'year'; // Aktuální časové období
@@ -112,7 +127,8 @@ let datasetVisibility = {
     'elektromer_vysoky': true,
     'elektromer_nizky': true,
     'plynomer': true,
-    'vodomer': true
+    'vodomer': true,
+    'fve': true
 };
 
 let chartWaitAttempts = 0;
@@ -159,7 +175,8 @@ async function loadChartData() {
     chartsContainer.classList.add('hidden');
     
     try {
-        const response = await fetch(`/api/grafy/data?period=${encodeURIComponent(currentPeriod)}`);
+        const endpoint = dataMode === 'diff' ? '/api/grafy/monthly-diff' : '/api/grafy/data';
+        const response = await fetch(`${endpoint}?period=${encodeURIComponent(currentPeriod)}`);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -198,18 +215,20 @@ async function loadChartData() {
     }
 }
 
-const datasetKeys = ['elektromer_vysoky', 'elektromer_nizky', 'plynomer', 'vodomer'];
+const datasetKeys = ['elektromer_vysoky', 'elektromer_nizky', 'plynomer', 'vodomer', 'fve'];
 const datasetLabels = {
     'elektromer_vysoky': 'Elektroměr vysoký tarif (kWh)',
     'elektromer_nizky': 'Elektroměr nízký tarif (kWh)',
     'plynomer': 'Plynoměr (m³)',
-    'vodomer': 'Vodoměr (m³)'
+    'vodomer': 'Vodoměr (m³)',
+    'fve': 'Výroba FVE (kWh)'
 };
 const datasetColors = {
     'elektromer_vysoky': '#3B82F6',
     'elektromer_nizky': '#EF4444',
     'plynomer': '#F59E0B',
-    'vodomer': '#10B981'
+    'vodomer': '#10B981',
+    'fve': '#8B5CF6'
 };
 
 function isDark() {
@@ -254,7 +273,7 @@ function createMainChart() {
                 maintainAspectRatio: false,
                 plugins: {
                     title: {
-                        display: true, text: 'Spotřeba energií',
+                        display: true, text: dataMode === 'diff' ? 'Měsíční spotřeba energií' : 'Celkové stavy měřičů',
                         font: { size: 18, weight: 'bold' },
                         color: textColor,
                         padding: { top: 10, bottom: 20 }
@@ -329,6 +348,29 @@ function toggleAllDatasets() {
     }
 }
 
+function changeDataMode(mode) {
+    if (dataMode === mode) return;
+    dataMode = mode;
+    
+    // Update button styles
+    const btnDiff = document.getElementById('mode-diff');
+    const btnCumul = document.getElementById('mode-cumulative');
+    
+    if (mode === 'diff') {
+        btnDiff.className = 'px-4 py-2 text-sm font-medium bg-blue-600 text-white border border-blue-600 rounded-l-lg hover:bg-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-300 transition-colors';
+        btnCumul.className = 'px-4 py-2 text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-300 transition-colors';
+        // Pro diff je vhodnější sloupcový graf
+        if (chartType !== 'bar') toggleChartType();
+    } else {
+        btnCumul.className = 'px-4 py-2 text-sm font-medium bg-blue-600 text-white border border-blue-600 rounded-r-lg hover:bg-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-300 transition-colors';
+        btnDiff.className = 'px-4 py-2 text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-l-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-300 transition-colors';
+        // Pro kumulativní je vhodnější čárový graf
+        if (chartType !== 'line') toggleChartType();
+    }
+    
+    loadChartData();
+}
+
 function toggleChartType() {
     chartType = chartType === 'bar' ? 'line' : 'bar';
     document.getElementById('chart-type-text').textContent = chartType === 'bar' ? 'Sloupcový graf' : 'Čárový graf';
@@ -382,6 +424,7 @@ async function loadYoYData() {
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">El. nízký (kWh)</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Plyn (m³)</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Voda (m³)</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">FVE (kWh)</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">`;
@@ -414,6 +457,12 @@ async function loadYoYData() {
                         <div class="flex flex-col gap-0.5">
                             <span>${fmtNum(y.vodomer)}</span>
                             ${prev ? diffCell(y.vodomer, prev.vodomer, 'm³') : ''}
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                        <div class="flex flex-col gap-0.5">
+                            <span>${fmtNum(y.fve)}</span>
+                            ${prev ? diffCell(y.fve, prev.fve, 'kWh') : ''}
                         </div>
                     </td>
                 </tr>`;

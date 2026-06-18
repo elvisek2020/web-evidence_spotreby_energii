@@ -21,6 +21,8 @@ DB_DATABASE = os.environ["DB_DATABASE"]
 DB_USER = os.environ["DB_USER"]
 DB_PASSWORD = os.environ["DB_PASSWORD"]
 
+__all__ = ["engine", "SessionLocal", "Base", "get_db", "DB_DATABASE"]
+
 DATABASE_URL = (
     f"mysql+pymysql://{quote_plus(DB_USER)}:{quote_plus(DB_PASSWORD)}"
     f"@{DB_HOST}:{DB_PORT}/{quote_plus(DB_DATABASE)}"

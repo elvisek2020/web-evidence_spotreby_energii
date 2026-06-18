@@ -12,6 +12,7 @@ class Spotreba(Base):
     elektromer_nizky = Column(Float, nullable=False)
     plynomer = Column(Float, nullable=False)
     vodomer = Column(Float, nullable=False)
+    fve = Column(Float, nullable=True, default=0)
     source = Column(Boolean, default=False, nullable=False)  # False = manuální, True = automaticky doplněné
     
     def __repr__(self):

@@ -89,6 +89,13 @@
                 <main id="main-content">
                     {% block content %}{% endblock %}
                 </main>
+                
+                <!-- Patička s verzí -->
+                <footer class="mt-12 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <p class="text-center text-xs text-gray-400 dark:text-gray-500">
+                        Verze <span id="app-version">…</span>
+                    </p>
+                </footer>
             </div>
         </div>
     </div>
@@ -104,6 +111,18 @@
             localStorage.setItem('darkMode', isDark);
             window.dispatchEvent(new CustomEvent('darkmodechange', { detail: { dark: isDark } }));
         });
+
+        fetch('/static/version.json', { cache: 'no-store' })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                const el = document.getElementById('app-version');
+                if (el && data && data.version) el.textContent = data.version;
+                else if (el) el.textContent = 'n/a';
+            })
+            .catch(() => {
+                const el = document.getElementById('app-version');
+                if (el) el.textContent = 'n/a';
+            });
     </script>
     {% block scripts %}{% endblock %}
 </body>

@@ -11,6 +11,7 @@ class SpotrebaBase(BaseModel):
     elektromer_nizky: float = Field(..., ge=0, le=MAX_METER_VALUE, description="Stav elektroměru nízký tarif v kWh")
     plynomer: float = Field(..., ge=0, le=MAX_METER_VALUE, description="Stav plynoměru v m³")
     vodomer: float = Field(..., ge=0, le=MAX_METER_VALUE, description="Stav vodoměru v m³")
+    fve: Optional[float] = Field(default=0, ge=0, le=MAX_METER_VALUE, description="Výroba FVE v kWh za období")
     source: bool = Field(default=False, description="Zdroj dat: False = manuální, True = automaticky doplněné")
 
     @validator('datum')
@@ -32,6 +33,7 @@ class SpotrebaUpdate(BaseModel):
     elektromer_nizky: Optional[float] = Field(None, ge=0, le=MAX_METER_VALUE)
     plynomer: Optional[float] = Field(None, ge=0, le=MAX_METER_VALUE)
     vodomer: Optional[float] = Field(None, ge=0, le=MAX_METER_VALUE)
+    fve: Optional[float] = Field(None, ge=0, le=MAX_METER_VALUE)
     source: Optional[bool] = None
 
     @validator('datum')
@@ -63,6 +65,7 @@ class MissingDataSuggestion(BaseModel):
     elektromer_nizky: float
     plynomer: float
     vodomer: float
+    fve: float = 0
     source: bool = True  # Vždy automaticky doplněné
 
 class ChartData(BaseModel):
@@ -72,4 +75,5 @@ class ChartData(BaseModel):
     elektromer_nizky: list[float]
     plynomer: list[float]
     vodomer: list[float]
+    fve: list[float]
     source_flags: list[bool]  # Označení zdroje dat pro každý měsíc

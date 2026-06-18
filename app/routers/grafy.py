@@ -52,6 +52,7 @@ async def get_chart_data(
     elektromer_nizky = []
     plynomer = []
     vodomer = []
+    fve = []
     source_flags = []
     
     for i, record in enumerate(records):
@@ -64,6 +65,7 @@ async def get_chart_data(
         elektromer_nizky.append(record.elektromer_nizky)
         plynomer.append(record.plynomer)
         vodomer.append(record.vodomer)
+        fve.append(record.fve or 0)
         source_flags.append(record.source)
     
     return ChartData(
@@ -72,6 +74,71 @@ async def get_chart_data(
         elektromer_nizky=elektromer_nizky,
         plynomer=plynomer,
         vodomer=vodomer,
+        fve=fve,
+        source_flags=source_flags
+    )
+
+@router.get("/grafy/monthly-diff", response_model=ChartData)
+async def get_monthly_diff_data(
+    db: Session = Depends(get_db),
+    period: Optional[str] = Query(None, description="Časové období: 'year' (poslední rok), '2years' (poslední 2 roky), 'all' (všechno)")
+):
+    """Získání dat pro grafy spotřeby - zobrazuje skutečnou měsíční spotřebu (přírůstky)"""
+    
+    # Pro výpočet rozdílů potřebujeme o jeden záznam více do minulosti
+    if period == "year":
+        cutoff_date = date.today() - timedelta(days=365 + 31)
+    elif period == "2years":
+        cutoff_date = date.today() - timedelta(days=730 + 31)
+    else:
+        cutoff_date = None
+        
+    query = db.query(Spotreba)
+    if cutoff_date:
+        query = query.filter(Spotreba.datum >= cutoff_date)
+        
+    records = query.order_by(Spotreba.datum.asc()).all()
+    
+    if not records or len(records) < 2:
+        return ChartData(
+            labels=[], elektromer_vysoky=[], elektromer_nizky=[],
+            plynomer=[], vodomer=[], fve=[], source_flags=[]
+        )
+        
+    labels = []
+    el_vysoky = []
+    el_nizky = []
+    plyn = []
+    voda = []
+    fve = []
+    source_flags = []
+    
+    # Výpočet rozdílů mezi po sobě jdoucími záznamy
+    for i in range(1, len(records)):
+        prev = records[i-1]
+        curr = records[i]
+        
+        # Oříznutí výsledků přesně na požadované období (pokud jsme brali záznam navíc)
+        if period == "year" and curr.datum < date.today() - timedelta(days=365):
+            continue
+        if period == "2years" and curr.datum < date.today() - timedelta(days=730):
+            continue
+            
+        labels.append(curr.datum.strftime('%d.%m.%Y'))
+        el_vysoky.append(round(curr.elektromer_vysoky - prev.elektromer_vysoky, 2))
+        el_nizky.append(round(curr.elektromer_nizky - prev.elektromer_nizky, 2))
+        plyn.append(round(curr.plynomer - prev.plynomer, 2))
+        voda.append(round(curr.vodomer - prev.vodomer, 2))
+        fve.append(curr.fve or 0)  # FVE je rovnou měsíční hodnota
+        source_flags.append(curr.source)
+        
+    return ChartData(
+        labels=labels,
+        elektromer_vysoky=el_vysoky,
+        elektromer_nizky=el_nizky,
+        plynomer=plyn,
+        vodomer=voda,
+        fve=fve,
         source_flags=source_flags
     )
 
@@ -98,6 +165,7 @@ async def get_year_over_year(db: Session = Depends(get_db)):
             "elektromer_nizky": round(last.elektromer_nizky - first.elektromer_nizky, 2),
             "plynomer": round(last.plynomer - first.plynomer, 2),
             "vodomer": round(last.vodomer - first.vodomer, 2),
+            "fve": round(sum((r.fve or 0) for r in recs), 2),
         })
 
     return {"years": years_data}

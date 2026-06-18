@@ -68,6 +68,11 @@ async def get_missing_data_suggestions(db: Session = Depends(get_db)):
             monthly_plynomer = (next_record.plynomer - current_record.plynomer) / months_between
             monthly_vodomer = (next_record.vodomer - current_record.vodomer) / months_between
             
+            # FVE interpolace
+            curr_fve = current_record.fve or 0
+            next_fve = next_record.fve or 0
+            monthly_fve = (next_fve - curr_fve) / months_between
+            
             # Generování návrhů pro chybějící měsíce (vždy první den v měsíci)
             for month_index, (year, month) in enumerate(missing_months, 1):
                 # První den v měsíci
@@ -77,6 +82,7 @@ async def get_missing_data_suggestions(db: Session = Depends(get_db)):
                 suggested_elektromer_nizky = current_record.elektromer_nizky + (monthly_elektromer_nizky * month_index)
                 suggested_plynomer = current_record.plynomer + (monthly_plynomer * month_index)
                 suggested_vodomer = current_record.vodomer + (monthly_vodomer * month_index)
+                suggested_fve = curr_fve + (monthly_fve * month_index)
                 
                 # Kontrola, zda už neexistuje záznam pro toto datum
                 existing = db.query(Spotreba).filter(Spotreba.datum == suggested_date).first()
@@ -87,6 +93,7 @@ async def get_missing_data_suggestions(db: Session = Depends(get_db)):
                         elektromer_nizky=round(suggested_elektromer_nizky, 2),
                         plynomer=round(suggested_plynomer, 2),
                         vodomer=round(suggested_vodomer, 2),
+                        fve=round(suggested_fve, 2),
                         source=True
                     ))
     
@@ -114,6 +121,7 @@ async def create_missing_data_suggestions(db: Session = Depends(get_db)):
                 elektromer_nizky=suggestion.elektromer_nizky,
                 plynomer=suggestion.plynomer,
                 vodomer=suggestion.vodomer,
+                fve=suggestion.fve,
                 source=True
             )
             db.add(new_record)
@@ -151,6 +159,7 @@ async def create_single_missing_data(
         elektromer_nizky=suggestion.elektromer_nizky,
         plynomer=suggestion.plynomer,
         vodomer=suggestion.vodomer,
+        fve=suggestion.fve,
         source=True
     )
     
