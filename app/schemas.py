@@ -57,6 +57,7 @@ class SpotrebaWithDiff(SpotrebaResponse):
     diff_elektromer_nizky: Optional[float] = None
     diff_plynomer: Optional[float] = None
     diff_vodomer: Optional[float] = None
+    diff_fve: Optional[float] = None
 
 class MissingDataSuggestion(BaseModel):
     """Schéma pro návrh chybějících dat"""

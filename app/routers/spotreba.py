@@ -48,7 +48,8 @@ async def get_spotreba_list(
             "diff_elektromer_vysoky": None,
             "diff_elektromer_nizky": None,
             "diff_plynomer": None,
-            "diff_vodomer": None
+            "diff_vodomer": None,
+            "diff_fve": None,
         }
         
         # Výpočet rozdílů s předchozím záznamem
@@ -58,6 +59,7 @@ async def get_spotreba_list(
             record_dict["diff_elektromer_nizky"] = record.elektromer_nizky - prev_record.elektromer_nizky
             record_dict["diff_plynomer"] = record.plynomer - prev_record.plynomer
             record_dict["diff_vodomer"] = record.vodomer - prev_record.vodomer
+            record_dict["diff_fve"] = (record.fve or 0) - (prev_record.fve or 0)
         
         result.append(SpotrebaWithDiff(**record_dict))
     

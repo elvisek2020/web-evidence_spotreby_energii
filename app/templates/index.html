@@ -30,47 +30,52 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             <div class="flex flex-col">
-                                <span class="table-value dark:text-white">{{ "%.2f"|format(record.elektromer_vysoky) }}</span>
+                                <span class="table-value dark:text-white">{{ "%.0f"|format(record.elektromer_vysoky) }}</span>
                                 {% if record.diff_elektromer_vysoky is not none %}
                                     <span class="table-diff {% if record.diff_elektromer_vysoky >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
-                                        {% if record.diff_elektromer_vysoky >= 0 %}+{% endif %}{{ "%.2f"|format(record.diff_elektromer_vysoky) }} kWh
+                                        {% if record.diff_elektromer_vysoky >= 0 %}+{% endif %}{{ "%.0f"|format(record.diff_elektromer_vysoky) }} kWh
                                     </span>
                                 {% endif %}
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             <div class="flex flex-col">
-                                <span class="table-value dark:text-white">{{ "%.2f"|format(record.elektromer_nizky) }}</span>
+                                <span class="table-value dark:text-white">{{ "%.0f"|format(record.elektromer_nizky) }}</span>
                                 {% if record.diff_elektromer_nizky is not none %}
                                     <span class="table-diff {% if record.diff_elektromer_nizky >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
-                                        {% if record.diff_elektromer_nizky >= 0 %}+{% endif %}{{ "%.2f"|format(record.diff_elektromer_nizky) }} kWh
+                                        {% if record.diff_elektromer_nizky >= 0 %}+{% endif %}{{ "%.0f"|format(record.diff_elektromer_nizky) }} kWh
                                     </span>
                                 {% endif %}
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             <div class="flex flex-col">
-                                <span class="table-value dark:text-white">{{ "%.2f"|format(record.plynomer) }}</span>
+                                <span class="table-value dark:text-white">{{ "%.0f"|format(record.plynomer) }}</span>
                                 {% if record.diff_plynomer is not none %}
                                     <span class="table-diff {% if record.diff_plynomer >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
-                                        {% if record.diff_plynomer >= 0 %}+{% endif %}{{ "%.2f"|format(record.diff_plynomer) }} m³
+                                        {% if record.diff_plynomer >= 0 %}+{% endif %}{{ "%.0f"|format(record.diff_plynomer) }} m³
                                     </span>
                                 {% endif %}
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             <div class="flex flex-col">
-                                <span class="table-value dark:text-white">{{ "%.2f"|format(record.vodomer) }}</span>
+                                <span class="table-value dark:text-white">{{ "%.0f"|format(record.vodomer) }}</span>
                                 {% if record.diff_vodomer is not none %}
                                     <span class="table-diff {% if record.diff_vodomer >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
-                                        {% if record.diff_vodomer >= 0 %}+{% endif %}{{ "%.2f"|format(record.diff_vodomer) }} m³
+                                        {% if record.diff_vodomer >= 0 %}+{% endif %}{{ "%.0f"|format(record.diff_vodomer) }} m³
                                     </span>
                                 {% endif %}
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             <div class="flex flex-col">
-                                <span class="table-value dark:text-white">{{ "%.2f"|format(record.fve or 0) }}</span>
+                                <span class="table-value dark:text-white">{{ "%.0f"|format(record.fve or 0) }}</span>
+                                {% if record.diff_fve is not none %}
+                                    <span class="table-diff {% if record.diff_fve >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                                        {% if record.diff_fve >= 0 %}+{% endif %}{{ "%.0f"|format(record.diff_fve) }} kWh
+                                    </span>
+                                {% endif %}
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
@@ -234,13 +239,13 @@ function updateTable(data) {
     }
     
     const safeId = (v) => Number(v);
-    const safeFloat = (v) => Number(v).toFixed(2);
+    const safeInt = (v) => Math.round(Number(v)).toString();
     const diffSpan = (val, unit) => {
         if (val === null || val === undefined) return '';
         const n = Number(val);
         const cls = n >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
         const sign = n >= 0 ? '+' : '';
-        return `<span class="table-diff ${cls}">${sign}${n.toFixed(2)} ${escapeHtml(unit)}</span>`;
+        return `<span class="table-diff ${cls}">${sign}${Math.round(n)} ${escapeHtml(unit)}</span>`;
     };
 
     tbody.innerHTML = data.map(record => `
@@ -250,31 +255,32 @@ function updateTable(data) {
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex flex-col">
-                    <span class="table-value dark:text-white">${safeFloat(record.elektromer_vysoky)}</span>
+                    <span class="table-value dark:text-white">${safeInt(record.elektromer_vysoky)}</span>
                     ${diffSpan(record.diff_elektromer_vysoky, 'kWh')}
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex flex-col">
-                    <span class="table-value dark:text-white">${safeFloat(record.elektromer_nizky)}</span>
+                    <span class="table-value dark:text-white">${safeInt(record.elektromer_nizky)}</span>
                     ${diffSpan(record.diff_elektromer_nizky, 'kWh')}
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex flex-col">
-                    <span class="table-value dark:text-white">${safeFloat(record.plynomer)}</span>
+                    <span class="table-value dark:text-white">${safeInt(record.plynomer)}</span>
                     ${diffSpan(record.diff_plynomer, 'm³')}
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex flex-col">
-                    <span class="table-value dark:text-white">${safeFloat(record.vodomer)}</span>
+                    <span class="table-value dark:text-white">${safeInt(record.vodomer)}</span>
                     ${diffSpan(record.diff_vodomer, 'm³')}
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex flex-col">
-                    <span class="table-value dark:text-white">${safeFloat(record.fve || 0)}</span>
+                    <span class="table-value dark:text-white">${safeInt(record.fve || 0)}</span>
+                    ${diffSpan(record.diff_fve, 'kWh')}
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
