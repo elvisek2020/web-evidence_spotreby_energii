@@ -62,12 +62,20 @@ class SpotrebaWithDiff(SpotrebaResponse):
 class MissingDataSuggestion(BaseModel):
     """Schéma pro návrh chybějících dat"""
     datum: date
-    elektromer_vysoky: float
-    elektromer_nizky: float
-    plynomer: float
-    vodomer: float
-    fve: float = 0
+    elektromer_vysoky: float = Field(..., ge=0, le=MAX_METER_VALUE)
+    elektromer_nizky: float = Field(..., ge=0, le=MAX_METER_VALUE)
+    plynomer: float = Field(..., ge=0, le=MAX_METER_VALUE)
+    vodomer: float = Field(..., ge=0, le=MAX_METER_VALUE)
+    fve: float = Field(default=0, ge=0, le=MAX_METER_VALUE)
     source: bool = True  # Vždy automaticky doplněné
+
+    @validator('datum')
+    def validate_datum(cls, v):
+        if v > date.today():
+            raise ValueError('Datum nesmí být v budoucnosti')
+        if v < date(2000, 1, 1):
+            raise ValueError('Datum nesmí být před rokem 2000')
+        return v
 
 class ChartData(BaseModel):
     """Schéma pro data grafů"""

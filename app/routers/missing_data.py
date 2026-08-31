@@ -2,100 +2,93 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import extract, func
 from typing import List
-from datetime import date, timedelta
+from datetime import date
 from ..database import get_db
 from ..models import Spotreba
-from ..schemas import MissingDataSuggestion, SpotrebaCreate
+from ..schemas import MissingDataSuggestion
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+def _missing_months(start: date, end: date) -> list[tuple[int, int]]:
+    """Kalendářní měsíce mezi dvěma odečty, které nemají vlastní záznam"""
+    months = []
+    year, month = start.year, start.month + 1
+    if month > 12:
+        year, month = year + 1, 1
+
+    while (year, month) < (end.year, end.month):
+        months.append((year, month))
+        month += 1
+        if month > 12:
+            year, month = year + 1, 1
+
+    return months
+
+def _interpolate(start_value: float, end_value: float, ratio: float) -> float:
+    """Lineární dopočet hodnoty mezi dvěma odečty"""
+    return round(start_value + (end_value - start_value) * ratio, 2)
+
+def _estimate_fve(db: Session, month: int, start_value: float, end_value: float, ratio: float) -> float:
+    """Odhad měsíční výroby FVE
+
+    Výroba je silně sezónní, takže lineární přechod mezi sousedními odečty
+    dává nesmyslné hodnoty. Přednost proto má průměr stejného kalendářního
+    měsíce z ručních odečtů. Nuly se ignorují, protože záznamy pořízené před
+    zavedením sloupce fve ho mají nastavený na 0.
+    """
+    seasonal_average = db.query(func.avg(Spotreba.fve)).filter(
+        extract("month", Spotreba.datum) == month,
+        Spotreba.source.is_(False),
+        Spotreba.fve > 0,
+    ).scalar()
+
+    if seasonal_average is not None:
+        return round(float(seasonal_average), 2)
+
+    return _interpolate(start_value, end_value, ratio)
+
 @router.get("/missing-data/suggestions", response_model=List[MissingDataSuggestion])
 async def get_missing_data_suggestions(db: Session = Depends(get_db)):
     """Získání návrhů pro doplnění chybějících dat"""
     
-    # Získání posledních 12 záznamů seřazených podle data
-    records = db.query(Spotreba).order_by(Spotreba.datum.desc()).limit(12).all()
+    records = db.query(Spotreba).order_by(Spotreba.datum).all()
     
     if len(records) < 2:
         return []
     
-    # Seřazení od nejstaršího k nejnovějšímu
-    records.reverse()
-    
+    existing_dates = {record.datum for record in records}
     suggestions = []
     
-    # Analýza mezer mezi záznamy
-    for i in range(len(records) - 1):
-        current_record = records[i]
-        next_record = records[i + 1]
+    # Analýza mezer mezi sousedními odečty
+    for current_record, next_record in zip(records, records[1:]):
+        missing_months = _missing_months(current_record.datum, next_record.datum)
+        if not missing_months:
+            continue
         
-        # Výpočet rozdílu v datech
-        date_diff = (next_record.datum - current_record.datum).days
+        gap_days = (next_record.datum - current_record.datum).days
         
-        # Pokud je mezera větší než 30 dní, navrhnout interpolované hodnoty
-        if date_diff > 30:
-            # Najít všechny chybějící měsíce mezi záznamy
-            current_year = current_record.datum.year
-            current_month = current_record.datum.month
-            next_year = next_record.datum.year
-            next_month = next_record.datum.month
+        # Návrhy se zakládají vždy k prvnímu dni chybějícího měsíce
+        for year, month in missing_months:
+            suggested_date = date(year, month, 1)
+            if suggested_date in existing_dates:
+                continue
             
-            # Vytvoření seznamu chybějících měsíců
-            missing_months = []
-            year = current_year
-            month = current_month + 1  # Začít od dalšího měsíce
+            # Váha podle skutečné pozice data v mezeře, ne podle pořadí měsíce
+            ratio = (suggested_date - current_record.datum).days / gap_days
             
-            # Oprava pro případ, kdy current_month je 12
-            if month > 12:
-                month = 1
-                year += 1
-            
-            while year < next_year or (year == next_year and month < next_month):
-                missing_months.append((year, month))
-                month += 1
-                if month > 12:
-                    month = 1
-                    year += 1
-            
-            # Výpočet průměrného přírůstku za měsíc
-            months_between = len(missing_months) + 1  # +1 pro aktuální měsíc
-            monthly_elektromer_vysoky = (next_record.elektromer_vysoky - current_record.elektromer_vysoky) / months_between
-            monthly_elektromer_nizky = (next_record.elektromer_nizky - current_record.elektromer_nizky) / months_between
-            monthly_plynomer = (next_record.plynomer - current_record.plynomer) / months_between
-            monthly_vodomer = (next_record.vodomer - current_record.vodomer) / months_between
-            
-            # FVE interpolace
-            curr_fve = current_record.fve or 0
-            next_fve = next_record.fve or 0
-            monthly_fve = (next_fve - curr_fve) / months_between
-            
-            # Generování návrhů pro chybějící měsíce (vždy první den v měsíci)
-            for month_index, (year, month) in enumerate(missing_months, 1):
-                # První den v měsíci
-                suggested_date = date(year, month, 1)
-                
-                suggested_elektromer_vysoky = current_record.elektromer_vysoky + (monthly_elektromer_vysoky * month_index)
-                suggested_elektromer_nizky = current_record.elektromer_nizky + (monthly_elektromer_nizky * month_index)
-                suggested_plynomer = current_record.plynomer + (monthly_plynomer * month_index)
-                suggested_vodomer = current_record.vodomer + (monthly_vodomer * month_index)
-                suggested_fve = curr_fve + (monthly_fve * month_index)
-                
-                # Kontrola, zda už neexistuje záznam pro toto datum
-                existing = db.query(Spotreba).filter(Spotreba.datum == suggested_date).first()
-                if not existing:
-                    suggestions.append(MissingDataSuggestion(
-                        datum=suggested_date,
-                        elektromer_vysoky=round(suggested_elektromer_vysoky, 2),
-                        elektromer_nizky=round(suggested_elektromer_nizky, 2),
-                        plynomer=round(suggested_plynomer, 2),
-                        vodomer=round(suggested_vodomer, 2),
-                        fve=round(suggested_fve, 2),
-                        source=True
-                    ))
+            suggestions.append(MissingDataSuggestion(
+                datum=suggested_date,
+                elektromer_vysoky=_interpolate(current_record.elektromer_vysoky, next_record.elektromer_vysoky, ratio),
+                elektromer_nizky=_interpolate(current_record.elektromer_nizky, next_record.elektromer_nizky, ratio),
+                plynomer=_interpolate(current_record.plynomer, next_record.plynomer, ratio),
+                vodomer=_interpolate(current_record.vodomer, next_record.vodomer, ratio),
+                fve=_estimate_fve(db, month, current_record.fve or 0, next_record.fve or 0, ratio),
+                source=True
+            ))
     
     return suggestions
 

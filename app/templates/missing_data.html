@@ -108,8 +108,9 @@
 <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3 text-center">Nápověda</h3>
     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-        <p>• Systém analyzuje posledních 12 záznamů a hledá mezery delší než 30 dní</p>
-        <p>• Pro chybějící měsíce vypočítá interpolované hodnoty na základě průměrného přírůstku</p>
+        <p>• Systém prochází všechny záznamy a hledá kalendářní měsíce bez odečtu</p>
+        <p>• Stavy měřičů dopočítá lineárně podle skutečného odstupu dnů mezi sousedními odečty</p>
+        <p>• Výrobu FVE odhadne z průměru stejného měsíce v ostatních letech, jinak také lineárně</p>
         <p>• Všechny automaticky doplněné záznamy jsou označeny jako "automatické"</p>
         <p>• Můžete vytvořit jednotlivé návrhy nebo všechny najednou</p>
     </div>

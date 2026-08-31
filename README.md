@@ -15,7 +15,7 @@ Aplikace je určena pro všechny, kteří chtějí systematicky sledovat svou sp
 - ✅ **Evidování spotřeby** - Zaznamenávání stavů měřičů (elektroměr vysoký/nízký tarif, plynoměr, vodoměr) s validací dat
 - ✅ **Přehledná tabulka** - Zobrazení posledních záznamů s výpočtem rozdílů mezi měřeními
 - ✅ **Interaktivní grafy** - Chart.js grafy pro vizualizaci spotřeby v čase s rozlišením zdrojů dat
-- ✅ **Automatické doplnění** - Inteligentní interpolace a návrhy pro chybějící záznamy
+- ✅ **Automatické doplnění** - Návrhy pro měsíce bez odečtu: stavy měřičů lineární interpolací podle skutečného odstupu dnů, výroba FVE ze sezónního průměru
 - ✅ **CRUD operace** - Kompletní správa záznamů (vytvoření, editace, mazání)
 - ✅ **Filtrování dat** - Přepínání mezi všemi a pouze manuálními záznamy
 
@@ -28,7 +28,7 @@ Aplikace poskytuje jednoduché a intuitivní rozhraní pro evidenci spotřeby en
 1. **Přidání záznamu**: Na hlavní stránce klikněte na tlačítko "Přidat záznam" a vyplňte formulář se stavy měřičů a datem měření
 2. **Prohlížení dat**: Na hlavní stránce si můžete prohlédnout posledních 12 záznamů v tabulce s automatickým výpočtem rozdílů
 3. **Grafické zobrazení**: Přepněte na záložku "Grafy" pro vizualizaci spotřeby pomocí interaktivních grafů
-4. **Automatické doplnění**: Pokud máte mezery v datech delší než 30 dní, můžete použít funkci "Chybějící data" pro automatické generování návrhů
+4. **Automatické doplnění**: Pokud některý kalendářní měsíc nemá odečet, můžete použít funkci "Chybějící data" pro automatické generování návrhů
 
 ## 🚀 Deployment
 
