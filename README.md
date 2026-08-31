@@ -17,6 +17,7 @@ Aplikace je určena pro všechny, kteří chtějí systematicky sledovat svou sp
 - ✅ **Interaktivní grafy** - Chart.js grafy pro vizualizaci spotřeby v čase s rozlišením zdrojů dat
 - ✅ **Automatické doplnění** - Návrhy pro měsíce bez odečtu: stavy měřičů lineární interpolací podle skutečného odstupu dnů, výroba FVE ze sezónního průměru
 - ✅ **CRUD operace** - Kompletní správa záznamů (vytvoření, editace, mazání)
+- ✅ **Výměna měřiče** - Označení v editaci záznamu; skok stavu se pak nepočítá jako spotřeba v tabulce, grafech ani meziročním porovnání
 - ✅ **Filtrování dat** - Přepínání mezi všemi a pouze manuálními záznamy
 
 ## 📖 Použití
@@ -186,6 +187,9 @@ Aplikace je postavena jako moderní webová aplikace s oddělením backendu a fr
   - `plynomer` - Stav plynoměru (m³)
   - `vodomer` - Stav vodoměru (m³)
   - `source` - Zdroj dat (boolean: false = manuální, true = automaticky doplněné)
+  - `vymena_elektromer_vysoky`, `vymena_elektromer_nizky`, `vymena_plynomer`, `vymena_vodomer` - Příznak výměny měřiče u daného odečtu (boolean)
+
+Chybějící sloupce se doplní automaticky při startu aplikace (`ensure_schema` v `app/main.py`), migrace se nespouští ručně.
 
 ### Technický stack
 

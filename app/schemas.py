@@ -13,6 +13,10 @@ class SpotrebaBase(BaseModel):
     vodomer: float = Field(..., ge=0, le=MAX_METER_VALUE, description="Stav vodoměru v m³")
     fve: Optional[float] = Field(default=0, ge=0, le=MAX_METER_VALUE, description="Výroba FVE v kWh za období")
     source: bool = Field(default=False, description="Zdroj dat: False = manuální, True = automaticky doplněné")
+    vymena_elektromer_vysoky: bool = Field(default=False, description="U tohoto odečtu byl nasazen nový elektroměr (vysoký tarif)")
+    vymena_elektromer_nizky: bool = Field(default=False, description="U tohoto odečtu byl nasazen nový elektroměr (nízký tarif)")
+    vymena_plynomer: bool = Field(default=False, description="U tohoto odečtu byl nasazen nový plynoměr")
+    vymena_vodomer: bool = Field(default=False, description="U tohoto odečtu byl nasazen nový vodoměr")
 
     @validator('datum')
     def validate_datum(cls, v):
@@ -35,6 +39,10 @@ class SpotrebaUpdate(BaseModel):
     vodomer: Optional[float] = Field(None, ge=0, le=MAX_METER_VALUE)
     fve: Optional[float] = Field(None, ge=0, le=MAX_METER_VALUE)
     source: Optional[bool] = None
+    vymena_elektromer_vysoky: Optional[bool] = None
+    vymena_elektromer_nizky: Optional[bool] = None
+    vymena_plynomer: Optional[bool] = None
+    vymena_vodomer: Optional[bool] = None
 
     @validator('datum')
     def validate_datum(cls, v):
@@ -78,11 +86,15 @@ class MissingDataSuggestion(BaseModel):
         return v
 
 class ChartData(BaseModel):
-    """Schéma pro data grafů"""
+    """Schéma pro data grafů
+
+    Hodnota None znamená přerušení řady - u měsíční spotřeby vzniká tam, kde byl
+    vyměněn měřič a rozdíl oproti předchozímu odečtu není spotřeba.
+    """
     labels: list[str]  # Měsíce
-    elektromer_vysoky: list[float]
-    elektromer_nizky: list[float]
-    plynomer: list[float]
-    vodomer: list[float]
-    fve: list[float]
+    elektromer_vysoky: list[Optional[float]]
+    elektromer_nizky: list[Optional[float]]
+    plynomer: list[Optional[float]]
+    vodomer: list[Optional[float]]
+    fve: list[Optional[float]]
     source_flags: list[bool]  # Označení zdroje dat pro každý měsíc

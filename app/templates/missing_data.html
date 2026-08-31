@@ -111,6 +111,7 @@
         <p>• Systém prochází všechny záznamy a hledá kalendářní měsíce bez odečtu</p>
         <p>• Stavy měřičů dopočítá lineárně podle skutečného odstupu dnů mezi sousedními odečty</p>
         <p>• Výrobu FVE odhadne z průměru stejného měsíce v ostatních letech, jinak také lineárně</p>
+        <p>• Mezeru navazující na výměnu měřiče vynechá, protože stavy na sebe nenavazují</p>
         <p>• Všechny automaticky doplněné záznamy jsou označeny jako "automatické"</p>
         <p>• Můžete vytvořit jednotlivé návrhy nebo všechny najednou</p>
     </div>
@@ -143,9 +144,12 @@ window.createSingleSuggestion = async function(datum, elektromer_vysoky, elektro
 };
 
 window.createAllSuggestions = async function() {
-    if (!confirm('Opravdu chcete vytvořit všechny navržené záznamy?')) {
-        return;
-    }
+    const confirmed = await showConfirm({
+        title: 'Vytvořit všechny návrhy',
+        message: 'Opravdu chcete vytvořit všechny navržené záznamy? Hromadné vytvoření nelze vrátit zpět.',
+        confirmText: 'Vytvořit'
+    });
+    if (!confirmed) return;
     
     try {
         const response = await fetch('/api/missing-data/create', { method: 'POST' });

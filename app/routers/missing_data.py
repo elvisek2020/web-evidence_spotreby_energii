@@ -32,6 +32,15 @@ def _interpolate(start_value: float, end_value: float, ratio: float) -> float:
     """Lineární dopočet hodnoty mezi dvěma odečty"""
     return round(start_value + (end_value - start_value) * ratio, 2)
 
+def _has_meter_replacement(record: Spotreba) -> bool:
+    """Byl u odečtu nasazen nový měřič?"""
+    return any((
+        record.vymena_elektromer_vysoky,
+        record.vymena_elektromer_nizky,
+        record.vymena_plynomer,
+        record.vymena_vodomer,
+    ))
+
 def _estimate_fve(db: Session, month: int, start_value: float, end_value: float, ratio: float) -> float:
     """Odhad měsíční výroby FVE
 
@@ -67,6 +76,14 @@ async def get_missing_data_suggestions(db: Session = Depends(get_db)):
     for current_record, next_record in zip(records, records[1:]):
         missing_months = _missing_months(current_record.datum, next_record.datum)
         if not missing_months:
+            continue
+        
+        # Přes výměnu měřiče nelze interpolovat, stavy na sebe nenavazují
+        if _has_meter_replacement(next_record):
+            logger.info(
+                "Mezera %s - %s přeskočena kvůli výměně měřiče",
+                current_record.datum, next_record.datum,
+            )
             continue
         
         gap_days = (next_record.datum - current_record.datum).days

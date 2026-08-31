@@ -84,6 +84,89 @@ function closeToast(toastId) {
     }
 }
 
+// Modální potvrzovací dialog, nahrazuje nativní confirm()
+function showConfirm(options = {}) {
+    const config = typeof options === 'string' ? { message: options } : options;
+    const {
+        title = 'Potvrzení',
+        message = '',
+        confirmText = 'Potvrdit',
+        cancelText = 'Zrušit',
+        variant = 'primary'
+    } = config;
+
+    return new Promise(resolve => {
+        const titleId = 'modal-title-' + Date.now();
+        const previouslyFocused = document.activeElement;
+
+        const confirmColors = variant === 'danger'
+            ? 'bg-red-600 hover:bg-red-700 focus-visible:ring-red-300'
+            : 'bg-blue-600 hover:bg-blue-700 focus-visible:ring-blue-300';
+
+        const overlay = document.createElement('div');
+        overlay.className = 'modal fixed inset-0 flex items-center justify-center p-4 bg-gray-900/50';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-labelledby', titleId);
+        overlay.innerHTML = `
+            <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
+                <h2 id="${titleId}" class="text-lg font-semibold text-gray-900 dark:text-white mb-2"></h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6"></p>
+                <div class="flex justify-end gap-3">
+                    <button type="button" data-modal-cancel class="inline-flex items-center px-4 py-2 text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"></button>
+                    <button type="button" data-modal-confirm class="inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg ${confirmColors} focus-visible:outline-none focus-visible:ring-2 transition-colors"></button>
+                </div>
+            </div>
+        `;
+
+        const cancelBtn = overlay.querySelector('[data-modal-cancel]');
+        const confirmBtn = overlay.querySelector('[data-modal-confirm]');
+        overlay.querySelector('h2').textContent = title;
+        overlay.querySelector('p').textContent = message;
+        cancelBtn.textContent = cancelText;
+        confirmBtn.textContent = confirmText;
+
+        function close(result) {
+            document.removeEventListener('keydown', onKeydown, true);
+            overlay.remove();
+            document.body.classList.remove('overflow-hidden');
+            if (previouslyFocused && document.contains(previouslyFocused)) {
+                previouslyFocused.focus();
+            }
+            resolve(result);
+        }
+
+        function onKeydown(e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                close(false);
+                return;
+            }
+            // Udržení focusu uvnitř dialogu
+            if (e.key === 'Tab') {
+                const target = e.shiftKey
+                    ? (document.activeElement === cancelBtn ? confirmBtn : null)
+                    : (document.activeElement === confirmBtn ? cancelBtn : null);
+                if (target) {
+                    e.preventDefault();
+                    target.focus();
+                }
+            }
+        }
+
+        cancelBtn.addEventListener('click', () => close(false));
+        confirmBtn.addEventListener('click', () => close(true));
+        overlay.addEventListener('click', e => {
+            if (e.target === overlay) close(false);
+        });
+        document.addEventListener('keydown', onKeydown, true);
+
+        document.body.classList.add('overflow-hidden');
+        document.body.appendChild(overlay);
+        confirmBtn.focus();
+    });
+}
+
 // Utility funkce
 function formatDate(date) {
     return new Date(date).toLocaleDateString('cs-CZ');
@@ -130,16 +213,6 @@ document.addEventListener('keydown', function(e) {
         if (form) {
             form.dispatchEvent(new Event('submit'));
         }
-    }
-    
-    // Esc pro zavření modálů
-    if (e.key === 'Escape') {
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(modal => {
-            if (modal.style.display !== 'none') {
-                modal.style.display = 'none';
-            }
-        });
     }
 });
 
@@ -189,6 +262,7 @@ document.addEventListener('DOMContentLoaded', function() {
 window.App = {
     showToast,
     closeToast,
+    showConfirm,
     formatDate,
     formatNumber,
     setLoading,

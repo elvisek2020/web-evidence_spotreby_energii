@@ -39,17 +39,26 @@ if ALLOWED_ORIGINS:
         allow_headers=["Content-Type"],
     )
 
+_SCHEMA_MIGRATIONS = {
+    "fve": "ALTER TABLE spotreba ADD COLUMN fve FLOAT NULL DEFAULT 0",
+    "vymena_elektromer_vysoky": "ALTER TABLE spotreba ADD COLUMN vymena_elektromer_vysoky TINYINT(1) NOT NULL DEFAULT 0",
+    "vymena_elektromer_nizky": "ALTER TABLE spotreba ADD COLUMN vymena_elektromer_nizky TINYINT(1) NOT NULL DEFAULT 0",
+    "vymena_plynomer": "ALTER TABLE spotreba ADD COLUMN vymena_plynomer TINYINT(1) NOT NULL DEFAULT 0",
+    "vymena_vodomer": "ALTER TABLE spotreba ADD COLUMN vymena_vodomer TINYINT(1) NOT NULL DEFAULT 0",
+}
+
 @app.on_event("startup")
 def ensure_schema():
     from .database import DB_DATABASE
     with engine.begin() as conn:
-        exists = conn.execute(text(
-            "SELECT COUNT(*) FROM information_schema.columns "
-            "WHERE table_schema=:db AND table_name='spotreba' AND column_name='fve'"
-        ), {"db": DB_DATABASE}).scalar()
-        if not exists:
-            conn.execute(text("ALTER TABLE spotreba ADD COLUMN fve FLOAT NULL DEFAULT 0"))
-            logger.info("Migrace: přidán sloupec fve")
+        for column, ddl in _SCHEMA_MIGRATIONS.items():
+            exists = conn.execute(text(
+                "SELECT COUNT(*) FROM information_schema.columns "
+                "WHERE table_schema=:db AND table_name='spotreba' AND column_name=:col"
+            ), {"db": DB_DATABASE, "col": column}).scalar()
+            if not exists:
+                conn.execute(text(ddl))
+                logger.info("Migrace: přidán sloupec %s", column)
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):

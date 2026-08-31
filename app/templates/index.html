@@ -31,7 +31,9 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             <div class="flex flex-col">
                                 <span class="table-value dark:text-white">{{ "%.0f"|format(record.elektromer_vysoky) }}</span>
-                                {% if record.diff_elektromer_vysoky is not none %}
+                                {% if record.vymena_elektromer_vysoky %}
+                                    <span class="table-diff text-amber-600 dark:text-amber-400">výměna měřiče</span>
+                                {% elif record.diff_elektromer_vysoky is not none %}
                                     <span class="table-diff {% if record.diff_elektromer_vysoky >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
                                         {% if record.diff_elektromer_vysoky >= 0 %}+{% endif %}{{ "%.0f"|format(record.diff_elektromer_vysoky) }} kWh
                                     </span>
@@ -41,7 +43,9 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             <div class="flex flex-col">
                                 <span class="table-value dark:text-white">{{ "%.0f"|format(record.elektromer_nizky) }}</span>
-                                {% if record.diff_elektromer_nizky is not none %}
+                                {% if record.vymena_elektromer_nizky %}
+                                    <span class="table-diff text-amber-600 dark:text-amber-400">výměna měřiče</span>
+                                {% elif record.diff_elektromer_nizky is not none %}
                                     <span class="table-diff {% if record.diff_elektromer_nizky >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
                                         {% if record.diff_elektromer_nizky >= 0 %}+{% endif %}{{ "%.0f"|format(record.diff_elektromer_nizky) }} kWh
                                     </span>
@@ -51,7 +55,9 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             <div class="flex flex-col">
                                 <span class="table-value dark:text-white">{{ "%.0f"|format(record.plynomer) }}</span>
-                                {% if record.diff_plynomer is not none %}
+                                {% if record.vymena_plynomer %}
+                                    <span class="table-diff text-amber-600 dark:text-amber-400">výměna měřiče</span>
+                                {% elif record.diff_plynomer is not none %}
                                     <span class="table-diff {% if record.diff_plynomer >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
                                         {% if record.diff_plynomer >= 0 %}+{% endif %}{{ "%.0f"|format(record.diff_plynomer) }} m³
                                     </span>
@@ -61,7 +67,9 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             <div class="flex flex-col">
                                 <span class="table-value dark:text-white">{{ "%.0f"|format(record.vodomer) }}</span>
-                                {% if record.diff_vodomer is not none %}
+                                {% if record.vymena_vodomer %}
+                                    <span class="table-diff text-amber-600 dark:text-amber-400">výměna měřiče</span>
+                                {% elif record.diff_vodomer is not none %}
                                     <span class="table-diff {% if record.diff_vodomer >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
                                         {% if record.diff_vodomer >= 0 %}+{% endif %}{{ "%.0f"|format(record.diff_vodomer) }} m³
                                     </span>
@@ -240,7 +248,8 @@ function updateTable(data) {
     
     const safeId = (v) => Number(v);
     const safeInt = (v) => Math.round(Number(v)).toString();
-    const diffSpan = (val, unit) => {
+    const diffSpan = (val, unit, replaced) => {
+        if (replaced) return '<span class="table-diff text-amber-600 dark:text-amber-400">výměna měřiče</span>';
         if (val === null || val === undefined) return '';
         const n = Number(val);
         const cls = n >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
@@ -256,25 +265,25 @@ function updateTable(data) {
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex flex-col">
                     <span class="table-value dark:text-white">${safeInt(record.elektromer_vysoky)}</span>
-                    ${diffSpan(record.diff_elektromer_vysoky, 'kWh')}
+                    ${diffSpan(record.diff_elektromer_vysoky, 'kWh', record.vymena_elektromer_vysoky)}
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex flex-col">
                     <span class="table-value dark:text-white">${safeInt(record.elektromer_nizky)}</span>
-                    ${diffSpan(record.diff_elektromer_nizky, 'kWh')}
+                    ${diffSpan(record.diff_elektromer_nizky, 'kWh', record.vymena_elektromer_nizky)}
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex flex-col">
                     <span class="table-value dark:text-white">${safeInt(record.plynomer)}</span>
-                    ${diffSpan(record.diff_plynomer, 'm³')}
+                    ${diffSpan(record.diff_plynomer, 'm³', record.vymena_plynomer)}
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex flex-col">
                     <span class="table-value dark:text-white">${safeInt(record.vodomer)}</span>
-                    ${diffSpan(record.diff_vodomer, 'm³')}
+                    ${diffSpan(record.diff_vodomer, 'm³', record.vymena_vodomer)}
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
@@ -303,7 +312,13 @@ function updateTable(data) {
 }
 
 async function deleteRecord(id) {
-    if (!confirm('Opravdu chcete smazat tento záznam?')) return;
+    const confirmed = await showConfirm({
+        title: 'Smazat záznam',
+        message: 'Opravdu chcete tento záznam smazat? Akci nelze vrátit zpět.',
+        confirmText: 'Smazat',
+        variant: 'danger'
+    });
+    if (!confirmed) return;
     
     const btn = document.querySelector(`[data-delete-id="${id}"]`);
     if (btn) {

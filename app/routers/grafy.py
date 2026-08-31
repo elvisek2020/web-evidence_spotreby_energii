@@ -10,6 +10,12 @@ from ..schemas import ChartData
 
 router = APIRouter()
 
+def _consumption(previous_value: float, current_value: float, replaced: bool) -> Optional[float]:
+    """Spotřeba mezi dvěma odečty, nebo None pokud byl mezitím vyměněn měřič"""
+    if replaced:
+        return None
+    return round(current_value - previous_value, 2)
+
 @router.get("/grafy/data", response_model=ChartData)
 async def get_chart_data(
     db: Session = Depends(get_db),
@@ -125,10 +131,10 @@ async def get_monthly_diff_data(
             continue
             
         labels.append(curr.datum.strftime('%d.%m.%Y'))
-        el_vysoky.append(round(curr.elektromer_vysoky - prev.elektromer_vysoky, 2))
-        el_nizky.append(round(curr.elektromer_nizky - prev.elektromer_nizky, 2))
-        plyn.append(round(curr.plynomer - prev.plynomer, 2))
-        voda.append(round(curr.vodomer - prev.vodomer, 2))
+        el_vysoky.append(_consumption(prev.elektromer_vysoky, curr.elektromer_vysoky, curr.vymena_elektromer_vysoky))
+        el_nizky.append(_consumption(prev.elektromer_nizky, curr.elektromer_nizky, curr.vymena_elektromer_nizky))
+        plyn.append(_consumption(prev.plynomer, curr.plynomer, curr.vymena_plynomer))
+        voda.append(_consumption(prev.vodomer, curr.vodomer, curr.vymena_vodomer))
         fve.append(curr.fve or 0)  # FVE je rovnou měsíční hodnota
         source_flags.append(curr.source)
         
@@ -153,18 +159,25 @@ async def get_year_over_year(db: Session = Depends(get_db)):
     for r in records:
         by_year[r.datum.year].append(r)
 
+    # Roční spotřeba se skládá z přírůstků mezi odečty, aby šlo vynechat
+    # intervaly s výměnou měřiče, kde skok stavu není spotřeba
+    meters = ("elektromer_vysoky", "elektromer_nizky", "plynomer", "vodomer")
+
     years_data = []
     for year in sorted(by_year.keys()):
         recs = by_year[year]
-        first = recs[0]
-        last = recs[-1]
+        totals = {meter: 0.0 for meter in meters}
+
+        for prev, curr in zip(recs, recs[1:]):
+            for meter in meters:
+                if getattr(curr, f"vymena_{meter}"):
+                    continue
+                totals[meter] += getattr(curr, meter) - getattr(prev, meter)
+
         years_data.append({
             "year": year,
             "months_count": len(recs),
-            "elektromer_vysoky": round(last.elektromer_vysoky - first.elektromer_vysoky, 2),
-            "elektromer_nizky": round(last.elektromer_nizky - first.elektromer_nizky, 2),
-            "plynomer": round(last.plynomer - first.plynomer, 2),
-            "vodomer": round(last.vodomer - first.vodomer, 2),
+            **{meter: round(value, 2) for meter, value in totals.items()},
             "fve": round(sum((r.fve or 0) for r in recs), 2),
         })
 

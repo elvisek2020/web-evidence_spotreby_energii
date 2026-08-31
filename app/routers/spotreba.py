@@ -45,6 +45,10 @@ async def get_spotreba_list(
             "vodomer": record.vodomer,
             "fve": record.fve or 0,
             "source": record.source,
+            "vymena_elektromer_vysoky": record.vymena_elektromer_vysoky,
+            "vymena_elektromer_nizky": record.vymena_elektromer_nizky,
+            "vymena_plynomer": record.vymena_plynomer,
+            "vymena_vodomer": record.vymena_vodomer,
             "diff_elektromer_vysoky": None,
             "diff_elektromer_nizky": None,
             "diff_plynomer": None,
@@ -52,13 +56,17 @@ async def get_spotreba_list(
             "diff_fve": None,
         }
         
-        # Výpočet rozdílů s předchozím záznamem
+        # Výpočet rozdílů s předchozím záznamem, u vyměněného měřiče rozdíl nedává smysl
         if i < len(spotreba_records) - 1:
             prev_record = spotreba_records[i + 1]
-            record_dict["diff_elektromer_vysoky"] = record.elektromer_vysoky - prev_record.elektromer_vysoky
-            record_dict["diff_elektromer_nizky"] = record.elektromer_nizky - prev_record.elektromer_nizky
-            record_dict["diff_plynomer"] = record.plynomer - prev_record.plynomer
-            record_dict["diff_vodomer"] = record.vodomer - prev_record.vodomer
+            if not record.vymena_elektromer_vysoky:
+                record_dict["diff_elektromer_vysoky"] = record.elektromer_vysoky - prev_record.elektromer_vysoky
+            if not record.vymena_elektromer_nizky:
+                record_dict["diff_elektromer_nizky"] = record.elektromer_nizky - prev_record.elektromer_nizky
+            if not record.vymena_plynomer:
+                record_dict["diff_plynomer"] = record.plynomer - prev_record.plynomer
+            if not record.vymena_vodomer:
+                record_dict["diff_vodomer"] = record.vodomer - prev_record.vodomer
             record_dict["diff_fve"] = (record.fve or 0) - (prev_record.fve or 0)
         
         result.append(SpotrebaWithDiff(**record_dict))

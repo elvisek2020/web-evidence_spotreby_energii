@@ -14,6 +14,13 @@ class Spotreba(Base):
     vodomer = Column(Float, nullable=False)
     fve = Column(Float, nullable=True, default=0)
     source = Column(Boolean, default=False, nullable=False)  # False = manuální, True = automaticky doplněné
+
+    # Příznak, že u tohoto odečtu byl nasazen nový měřič - stav proto nenavazuje
+    # na předchozí záznam a rozdíl se nesmí počítat jako spotřeba
+    vymena_elektromer_vysoky = Column(Boolean, default=False, nullable=False)
+    vymena_elektromer_nizky = Column(Boolean, default=False, nullable=False)
+    vymena_plynomer = Column(Boolean, default=False, nullable=False)
+    vymena_vodomer = Column(Boolean, default=False, nullable=False)
     
     def __repr__(self):
         return f"<Spotreba(id={self.id}, datum={self.datum}, elektromer_vysoky={self.elektromer_vysoky})>"
