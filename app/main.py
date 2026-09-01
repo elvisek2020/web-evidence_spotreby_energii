@@ -45,6 +45,7 @@ _SCHEMA_MIGRATIONS = {
     "vymena_elektromer_nizky": "ALTER TABLE spotreba ADD COLUMN vymena_elektromer_nizky TINYINT(1) NOT NULL DEFAULT 0",
     "vymena_plynomer": "ALTER TABLE spotreba ADD COLUMN vymena_plynomer TINYINT(1) NOT NULL DEFAULT 0",
     "vymena_vodomer": "ALTER TABLE spotreba ADD COLUMN vymena_vodomer TINYINT(1) NOT NULL DEFAULT 0",
+    "vymena_fve": "ALTER TABLE spotreba ADD COLUMN vymena_fve TINYINT(1) NOT NULL DEFAULT 0",
 }
 
 @app.on_event("startup")

@@ -11,12 +11,13 @@ class SpotrebaBase(BaseModel):
     elektromer_nizky: float = Field(..., ge=0, le=MAX_METER_VALUE, description="Stav elektroměru nízký tarif v kWh")
     plynomer: float = Field(..., ge=0, le=MAX_METER_VALUE, description="Stav plynoměru v m³")
     vodomer: float = Field(..., ge=0, le=MAX_METER_VALUE, description="Stav vodoměru v m³")
-    fve: Optional[float] = Field(default=0, ge=0, le=MAX_METER_VALUE, description="Výroba FVE v kWh za období")
+    fve: Optional[float] = Field(default=0, ge=0, le=MAX_METER_VALUE, description="Stav počítadla výroby FVE v kWh (kumulativní, 0 = neevidováno)")
     source: bool = Field(default=False, description="Zdroj dat: False = manuální, True = automaticky doplněné")
     vymena_elektromer_vysoky: bool = Field(default=False, description="U tohoto odečtu byl nasazen nový elektroměr (vysoký tarif)")
     vymena_elektromer_nizky: bool = Field(default=False, description="U tohoto odečtu byl nasazen nový elektroměr (nízký tarif)")
     vymena_plynomer: bool = Field(default=False, description="U tohoto odečtu byl nasazen nový plynoměr")
     vymena_vodomer: bool = Field(default=False, description="U tohoto odečtu byl nasazen nový vodoměr")
+    vymena_fve: bool = Field(default=False, description="U tohoto odečtu bylo nasazeno nové počítadlo FVE")
 
     @validator('datum')
     def validate_datum(cls, v):
@@ -27,8 +28,13 @@ class SpotrebaBase(BaseModel):
         return v
 
 class SpotrebaCreate(SpotrebaBase):
-    """Schéma pro vytvoření nového záznamu"""
-    pass
+    """Schéma pro vytvoření nového záznamu
+
+    Na vstupu je počítadlo FVE povinné stejně jako ostatní měřiče. V SpotrebaBase
+    zůstává volitelné, protože z něj dědí i odpověď a historické záznamy mají fve
+    prázdné.
+    """
+    fve: float = Field(..., ge=0, le=MAX_METER_VALUE, description="Stav počítadla výroby FVE v kWh (kumulativní, 0 = neevidováno)")
 
 class SpotrebaUpdate(BaseModel):
     """Schéma pro aktualizaci záznamu"""
@@ -43,6 +49,7 @@ class SpotrebaUpdate(BaseModel):
     vymena_elektromer_nizky: Optional[bool] = None
     vymena_plynomer: Optional[bool] = None
     vymena_vodomer: Optional[bool] = None
+    vymena_fve: Optional[bool] = None
 
     @validator('datum')
     def validate_datum(cls, v):

@@ -16,7 +16,7 @@
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Elektroměr nízký (kWh)</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Plynoměr (m³)</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Vodoměr (m³)</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Výroba FVE (kWh)</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Počítadlo FVE (kWh)</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Zdroj</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Akce</th>
                 </tr>
@@ -79,7 +79,9 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             <div class="flex flex-col">
                                 <span class="table-value dark:text-white">{{ "%.0f"|format(record.fve or 0) }}</span>
-                                {% if record.diff_fve is not none %}
+                                {% if record.vymena_fve %}
+                                    <span class="table-diff text-amber-600 dark:text-amber-400">výměna měřiče</span>
+                                {% elif record.diff_fve is not none %}
                                     <span class="table-diff {% if record.diff_fve >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
                                         {% if record.diff_fve >= 0 %}+{% endif %}{{ "%.0f"|format(record.diff_fve) }} kWh
                                     </span>
@@ -289,7 +291,7 @@ function updateTable(data) {
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <div class="flex flex-col">
                     <span class="table-value dark:text-white">${safeInt(record.fve || 0)}</span>
-                    ${diffSpan(record.diff_fve, 'kWh')}
+                    ${diffSpan(record.diff_fve, 'kWh', record.vymena_fve)}
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">

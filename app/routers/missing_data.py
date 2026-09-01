@@ -2,8 +2,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import extract, func
-from typing import List
+from typing import List, Optional
 from datetime import date
 from ..database import get_db
 from ..models import Spotreba
@@ -39,25 +38,17 @@ def _has_meter_replacement(record: Spotreba) -> bool:
         record.vymena_elektromer_nizky,
         record.vymena_plynomer,
         record.vymena_vodomer,
+        record.vymena_fve,
     ))
 
-def _estimate_fve(db: Session, month: int, start_value: float, end_value: float, ratio: float) -> float:
-    """Odhad měsíční výroby FVE
+def _interpolate_fve(start_value: Optional[float], end_value: Optional[float], ratio: float) -> float:
+    """Dopočet stavu počítadla FVE
 
-    Výroba je silně sezónní, takže lineární přechod mezi sousedními odečty
-    dává nesmyslné hodnoty. Přednost proto má průměr stejného kalendářního
-    měsíce z ručních odečtů. Nuly se ignorují, protože záznamy pořízené před
-    zavedením sloupce fve ho mají nastavený na 0.
+    Nula znamená chybějící údaj (záznamy před zavedením sloupce fve), z takové
+    dvojice by interpolace vyrobila nesmyslný stav.
     """
-    seasonal_average = db.query(func.avg(Spotreba.fve)).filter(
-        extract("month", Spotreba.datum) == month,
-        Spotreba.source.is_(False),
-        Spotreba.fve > 0,
-    ).scalar()
-
-    if seasonal_average is not None:
-        return round(float(seasonal_average), 2)
-
+    if not start_value or not end_value:
+        return 0.0
     return _interpolate(start_value, end_value, ratio)
 
 @router.get("/missing-data/suggestions", response_model=List[MissingDataSuggestion])
@@ -103,7 +94,7 @@ async def get_missing_data_suggestions(db: Session = Depends(get_db)):
                 elektromer_nizky=_interpolate(current_record.elektromer_nizky, next_record.elektromer_nizky, ratio),
                 plynomer=_interpolate(current_record.plynomer, next_record.plynomer, ratio),
                 vodomer=_interpolate(current_record.vodomer, next_record.vodomer, ratio),
-                fve=_estimate_fve(db, month, current_record.fve or 0, next_record.fve or 0, ratio),
+                fve=_interpolate_fve(current_record.fve, next_record.fve, ratio),
                 source=True
             ))
     

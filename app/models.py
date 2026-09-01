@@ -21,6 +21,7 @@ class Spotreba(Base):
     vymena_elektromer_nizky = Column(Boolean, default=False, nullable=False)
     vymena_plynomer = Column(Boolean, default=False, nullable=False)
     vymena_vodomer = Column(Boolean, default=False, nullable=False)
+    vymena_fve = Column(Boolean, default=False, nullable=False)
     
     def __repr__(self):
         return f"<Spotreba(id={self.id}, datum={self.datum}, elektromer_vysoky={self.elektromer_vysoky})>"

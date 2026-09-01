@@ -35,7 +35,7 @@
                     min="0" 
                     step="0.01"
                     class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    {% if latest %}value="{{ latest.elektromer_vysoky }}"{% endif %}
+                    {% if latest %}placeholder="Poslední odečet: {{ "%.0f"|format(latest.elektromer_vysoky) }}"{% endif %}
                 >
             </div>
         </div>
@@ -52,7 +52,7 @@
                     min="0" 
                     step="0.01"
                     class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    {% if latest %}value="{{ latest.elektromer_nizky }}"{% endif %}
+                    {% if latest %}placeholder="Poslední odečet: {{ "%.0f"|format(latest.elektromer_nizky) }}"{% endif %}
                 >
             </div>
         </div>
@@ -69,7 +69,7 @@
                     min="0" 
                     step="0.01"
                     class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    {% if latest %}value="{{ latest.plynomer }}"{% endif %}
+                    {% if latest %}placeholder="Poslední odečet: {{ "%.0f"|format(latest.plynomer) }}"{% endif %}
                 >
             </div>
         </div>
@@ -86,23 +86,24 @@
                     min="0" 
                     step="0.01"
                     class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    {% if latest %}value="{{ latest.vodomer }}"{% endif %}
+                    {% if latest %}placeholder="Poslední odečet: {{ "%.0f"|format(latest.vodomer) }}"{% endif %}
                 >
             </div>
         </div>
         
         <!-- FVE -->
         <div class="flex items-center gap-4 mb-6">
-            <label for="fve" class="w-64 text-sm font-medium text-gray-700 dark:text-gray-300 text-right">Výroba FVE (kWh)</label>
+            <label for="fve" class="w-64 text-sm font-medium text-gray-700 dark:text-gray-300 text-right">Počítadlo FVE (kWh) *</label>
             <div class="flex-1">
                 <input 
                     type="number" 
                     id="fve" 
                     name="fve" 
+                    required 
                     min="0" 
                     step="0.01"
                     class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    {% if latest and latest.fve is not none %}value="{{ latest.fve }}"{% else %}value="0"{% endif %}
+                    {% if latest and latest.fve %}placeholder="Poslední odečet: {{ "%.0f"|format(latest.fve) }}"{% endif %}
                 >
             </div>
         </div>
@@ -128,7 +129,8 @@
         <p>• Datum nesmí být v budoucnosti</p>
         <p>• Hodnoty měřičů musí být nezáporné čísla</p>
         {% if latest %}
-        <p>• Hodnoty jsou předvyplněny z posledního záznamu ({{ latest.datum.strftime('%d.%m.%Y') }}) -- aktualizujte na nové stavy</p>
+        <p>• Šedě je v polích naznačen poslední odečet ({{ latest.datum.strftime('%d.%m.%Y') }}) -- slouží jen jako vodítko, hodnoty je nutné vyplnit</p>
+        <p>• Pokud FVE neevidujete, zadejte do počítadla 0 -- výroba se pak za daný měsíc nepočítá</p>
         {% endif %}
     </div>
 </section>
@@ -155,7 +157,7 @@ document.getElementById('evidovat-form').addEventListener('submit', async functi
     data.elektromer_nizky = parseFloat(data.elektromer_nizky);
     data.plynomer = parseFloat(data.plynomer);
     data.vodomer = parseFloat(data.vodomer);
-    data.fve = data.fve ? parseFloat(data.fve) : 0;
+    data.fve = parseFloat(data.fve);
     data.source = data.source === 'true';
     
     try {

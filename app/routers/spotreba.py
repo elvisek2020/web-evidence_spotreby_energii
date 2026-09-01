@@ -49,6 +49,7 @@ async def get_spotreba_list(
             "vymena_elektromer_nizky": record.vymena_elektromer_nizky,
             "vymena_plynomer": record.vymena_plynomer,
             "vymena_vodomer": record.vymena_vodomer,
+            "vymena_fve": record.vymena_fve,
             "diff_elektromer_vysoky": None,
             "diff_elektromer_nizky": None,
             "diff_plynomer": None,
@@ -67,7 +68,9 @@ async def get_spotreba_list(
                 record_dict["diff_plynomer"] = record.plynomer - prev_record.plynomer
             if not record.vymena_vodomer:
                 record_dict["diff_vodomer"] = record.vodomer - prev_record.vodomer
-            record_dict["diff_fve"] = (record.fve or 0) - (prev_record.fve or 0)
+            # Nulové počítadlo FVE znamená neevidováno, rozdíl proti němu nedává smysl
+            if record.fve and prev_record.fve and not record.vymena_fve:
+                record_dict["diff_fve"] = record.fve - prev_record.fve
         
         result.append(SpotrebaWithDiff(**record_dict))
     

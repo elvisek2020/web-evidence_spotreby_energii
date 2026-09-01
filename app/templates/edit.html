@@ -35,7 +35,7 @@
                     min="0" 
                     step="0.01"
                     class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value="{{ spotreba.elektromer_vysoky }}"
+                    value="{{ "%.0f"|format(spotreba.elektromer_vysoky) }}"
                 >
             </div>
         </div>
@@ -51,7 +51,7 @@
                     min="0" 
                     step="0.01"
                     class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value="{{ spotreba.elektromer_nizky }}"
+                    value="{{ "%.0f"|format(spotreba.elektromer_nizky) }}"
                 >
             </div>
         </div>
@@ -67,7 +67,7 @@
                     min="0" 
                     step="0.01"
                     class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value="{{ spotreba.plynomer }}"
+                    value="{{ "%.0f"|format(spotreba.plynomer) }}"
                 >
             </div>
         </div>
@@ -83,22 +83,23 @@
                     min="0" 
                     step="0.01"
                     class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value="{{ spotreba.vodomer }}"
+                    value="{{ "%.0f"|format(spotreba.vodomer) }}"
                 >
             </div>
         </div>
         
         <div class="flex items-center gap-4 mb-6">
-            <label for="fve" class="w-64 text-sm font-medium text-gray-700 dark:text-gray-300 text-right">Výroba FVE (kWh)</label>
+            <label for="fve" class="w-64 text-sm font-medium text-gray-700 dark:text-gray-300 text-right">Počítadlo FVE (kWh) *</label>
             <div class="flex-1">
                 <input 
                     type="number" 
                     id="fve" 
                     name="fve" 
+                    required 
                     min="0" 
                     step="0.01"
                     class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value="{{ spotreba.fve or 0 }}"
+                    value="{{ "%.0f"|format(spotreba.fve or 0) }}"
                 >
             </div>
         </div>
@@ -138,6 +139,10 @@
                     <label class="inline-flex items-center">
                         <input type="checkbox" id="vymena_vodomer" name="vymena_vodomer" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" {% if spotreba.vymena_vodomer %}checked{% endif %}>
                         <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Vodoměr</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" id="vymena_fve" name="vymena_fve" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" {% if spotreba.vymena_fve %}checked{% endif %}>
+                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Počítadlo FVE</span>
                     </label>
                 </div>
                 <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -199,7 +204,7 @@
             <span class="text-gray-600 dark:text-gray-400">{{ "%.2f"|format(spotreba.vodomer) }} m³</span>
         </div>
         <div>
-            <span class="font-medium text-gray-700 dark:text-gray-300">Výroba FVE:</span>
+            <span class="font-medium text-gray-700 dark:text-gray-300">Počítadlo FVE:</span>
             <span class="text-gray-600 dark:text-gray-400">{{ "%.2f"|format(spotreba.fve or 0) }} kWh</span>
         </div>
     </div>
@@ -225,11 +230,11 @@ document.getElementById('edit-form').addEventListener('submit', async function(e
     data.elektromer_nizky = parseFloat(data.elektromer_nizky);
     data.plynomer = parseFloat(data.plynomer);
     data.vodomer = parseFloat(data.vodomer);
-    data.fve = data.fve ? parseFloat(data.fve) : 0;
+    data.fve = parseFloat(data.fve);
     data.source = data.source === 'true';
     
     // Nezaškrtnuté checkboxy se ve FormData neobjeví, stav proto čteme přímo z prvků
-    ['vymena_elektromer_vysoky', 'vymena_elektromer_nizky', 'vymena_plynomer', 'vymena_vodomer']
+    ['vymena_elektromer_vysoky', 'vymena_elektromer_nizky', 'vymena_plynomer', 'vymena_vodomer', 'vymena_fve']
         .forEach(name => { data[name] = document.getElementById(name).checked; });
     
     try {

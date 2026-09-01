@@ -15,7 +15,7 @@ Aplikace je určena pro všechny, kteří chtějí systematicky sledovat svou sp
 - ✅ **Evidování spotřeby** - Zaznamenávání stavů měřičů (elektroměr vysoký/nízký tarif, plynoměr, vodoměr) s validací dat
 - ✅ **Přehledná tabulka** - Zobrazení posledních záznamů s výpočtem rozdílů mezi měřeními
 - ✅ **Interaktivní grafy** - Chart.js grafy pro vizualizaci spotřeby v čase s rozlišením zdrojů dat
-- ✅ **Automatické doplnění** - Návrhy pro měsíce bez odečtu: stavy měřičů lineární interpolací podle skutečného odstupu dnů, výroba FVE ze sezónního průměru
+- ✅ **Automatické doplnění** - Návrhy pro měsíce bez odečtu, stavy měřičů lineární interpolací podle skutečného odstupu dnů
 - ✅ **CRUD operace** - Kompletní správa záznamů (vytvoření, editace, mazání)
 - ✅ **Výměna měřiče** - Označení v editaci záznamu; skok stavu se pak nepočítá jako spotřeba v tabulce, grafech ani meziročním porovnání
 - ✅ **Filtrování dat** - Přepínání mezi všemi a pouze manuálními záznamy
@@ -26,7 +26,7 @@ Aplikace poskytuje jednoduché a intuitivní rozhraní pro evidenci spotřeby en
 
 ### Základní workflow
 
-1. **Přidání záznamu**: Na hlavní stránce klikněte na tlačítko "Přidat záznam" a vyplňte formulář se stavy měřičů a datem měření
+1. **Přidání záznamu**: Na hlavní stránce klikněte na tlačítko "Přidat záznam" a vyplňte formulář se stavy měřičů a datem měření. Poslední odečet je v polích jen jako placeholder (nápověda), takže se nedá omylem uložit stará hodnota
 2. **Prohlížení dat**: Na hlavní stránce si můžete prohlédnout posledních 12 záznamů v tabulce s automatickým výpočtem rozdílů
 3. **Grafické zobrazení**: Přepněte na záložku "Grafy" pro vizualizaci spotřeby pomocí interaktivních grafů
 4. **Automatické doplnění**: Pokud některý kalendářní měsíc nemá odečet, můžete použít funkci "Chybějící data" pro automatické generování návrhů
@@ -186,8 +186,9 @@ Aplikace je postavena jako moderní webová aplikace s oddělením backendu a fr
   - `elektromer_nizky` - Stav elektroměru nízký tarif (kWh)
   - `plynomer` - Stav plynoměru (m³)
   - `vodomer` - Stav vodoměru (m³)
+  - `fve` - Stav počítadla výroby FVE na střídači (kWh, kumulativní jako ostatní měřiče; 0 = neevidováno)
   - `source` - Zdroj dat (boolean: false = manuální, true = automaticky doplněné)
-  - `vymena_elektromer_vysoky`, `vymena_elektromer_nizky`, `vymena_plynomer`, `vymena_vodomer` - Příznak výměny měřiče u daného odečtu (boolean)
+  - `vymena_elektromer_vysoky`, `vymena_elektromer_nizky`, `vymena_plynomer`, `vymena_vodomer`, `vymena_fve` - Příznak výměny měřiče u daného odečtu (boolean)
 
 Chybějící sloupce se doplní automaticky při startu aplikace (`ensure_schema` v `app/main.py`), migrace se nespouští ručně.
 

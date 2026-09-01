@@ -16,6 +16,17 @@ def _consumption(previous_value: float, current_value: float, replaced: bool) ->
         return None
     return round(current_value - previous_value, 2)
 
+def _fve_production(previous_value: Optional[float], current_value: Optional[float], replaced: bool) -> Optional[float]:
+    """Výroba FVE mezi dvěma odečty
+
+    Počítadlo střídače je kumulativní stejně jako ostatní měřiče. Nula znamená
+    chybějící údaj, protože záznamy pořízené před zavedením sloupce fve ho mají
+    nastavený na 0 - rozdíl proti nim by vyrobil falešný skok.
+    """
+    if replaced or not previous_value or not current_value:
+        return None
+    return round(current_value - previous_value, 2)
+
 @router.get("/grafy/data", response_model=ChartData)
 async def get_chart_data(
     db: Session = Depends(get_db),
@@ -71,7 +82,7 @@ async def get_chart_data(
         elektromer_nizky.append(record.elektromer_nizky)
         plynomer.append(record.plynomer)
         vodomer.append(record.vodomer)
-        fve.append(record.fve or 0)
+        fve.append(record.fve if record.fve else None)
         source_flags.append(record.source)
     
     return ChartData(
@@ -135,7 +146,7 @@ async def get_monthly_diff_data(
         el_nizky.append(_consumption(prev.elektromer_nizky, curr.elektromer_nizky, curr.vymena_elektromer_nizky))
         plyn.append(_consumption(prev.plynomer, curr.plynomer, curr.vymena_plynomer))
         voda.append(_consumption(prev.vodomer, curr.vodomer, curr.vymena_vodomer))
-        fve.append(curr.fve or 0)  # FVE je rovnou měsíční hodnota
+        fve.append(_fve_production(prev.fve, curr.fve, curr.vymena_fve))
         source_flags.append(curr.source)
         
     return ChartData(
@@ -167,6 +178,7 @@ async def get_year_over_year(db: Session = Depends(get_db)):
     for year in sorted(by_year.keys()):
         recs = by_year[year]
         totals = {meter: 0.0 for meter in meters}
+        fve_total = 0.0
 
         for prev, curr in zip(recs, recs[1:]):
             for meter in meters:
@@ -174,11 +186,15 @@ async def get_year_over_year(db: Session = Depends(get_db)):
                     continue
                 totals[meter] += getattr(curr, meter) - getattr(prev, meter)
 
+            production = _fve_production(prev.fve, curr.fve, curr.vymena_fve)
+            if production is not None:
+                fve_total += production
+
         years_data.append({
             "year": year,
             "months_count": len(recs),
             **{meter: round(value, 2) for meter, value in totals.items()},
-            "fve": round(sum((r.fve or 0) for r in recs), 2),
+            "fve": round(fve_total, 2),
         })
 
     return {"years": years_data}

@@ -48,7 +48,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Elektroměr nízký (kWh)</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Plynoměr (m³)</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Vodoměr (m³)</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Výroba FVE (kWh)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Počítadlo FVE (kWh)</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Akce</th>
                         </tr>
                     </thead>
@@ -110,7 +110,6 @@
     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
         <p>• Systém prochází všechny záznamy a hledá kalendářní měsíce bez odečtu</p>
         <p>• Stavy měřičů dopočítá lineárně podle skutečného odstupu dnů mezi sousedními odečty</p>
-        <p>• Výrobu FVE odhadne z průměru stejného měsíce v ostatních letech, jinak také lineárně</p>
         <p>• Mezeru navazující na výměnu měřiče vynechá, protože stavy na sebe nenavazují</p>
         <p>• Všechny automaticky doplněné záznamy jsou označeny jako "automatické"</p>
         <p>• Můžete vytvořit jednotlivé návrhy nebo všechny najednou</p>
@@ -211,7 +210,7 @@ function updateSuggestionsTable(suggestions) {
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Elektroměr nízký (kWh)</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plynoměr (m³)</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vodoměr (m³)</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Výroba FVE (kWh)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Počítadlo FVE (kWh)</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akce</th>
                         </tr>
                     </thead>
