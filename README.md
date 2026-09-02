@@ -267,8 +267,12 @@ Aplikace poskytuje REST API endpointy pro správu dat:
 - `POST /api/spotreba` - Vytvoření záznamu
 - `PUT /api/spotreba/{id}` - Aktualizace záznamu
 - `DELETE /api/spotreba/{id}` - Smazání záznamu
-- `GET /api/grafy/data` - Data pro grafy
-- `GET /api/missing-data/suggestions` - Návrhy chybějících dat
+- `GET /api/grafy/data` - Kumulativní stavy měřičů (query parametr `period`)
+- `GET /api/grafy/monthly-diff` - Měsíční spotřeba jako přírůstky (query parametr `period`)
+- `GET /api/grafy/yoy` - Meziroční porovnání spotřeby (roky vzestupně)
+- `GET /api/missing-data/suggestions` - Návrhy chybějících dat (nejnovější první)
+
+Parametr `period` u grafů přijímá hodnoty `3months`, `6months`, `year`, `2years`, `3years` a `all` (výchozí).
 
 ### 💻 Vývoj
 

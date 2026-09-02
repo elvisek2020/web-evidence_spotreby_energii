@@ -98,6 +98,8 @@ async def get_missing_data_suggestions(db: Session = Depends(get_db)):
                 source=True
             ))
     
+    suggestions.sort(key=lambda suggestion: suggestion.datum, reverse=True)
+    
     return suggestions
 
 @router.post("/missing-data/create")

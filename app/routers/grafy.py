@@ -10,6 +10,27 @@ from ..schemas import ChartData
 
 router = APIRouter()
 
+# Délka časového okna filtru grafů ve dnech; None = bez omezení
+_PERIOD_DAYS = {
+    "3months": 90,
+    "6months": 180,
+    "year": 365,
+    "2years": 730,
+    "3years": 1095,
+    "all": None,
+}
+
+_PERIOD_DESCRIPTION = (
+    "Časové období: '3months', '6months', 'year', '2years', '3years', 'all' (výchozí)"
+)
+
+def _period_cutoff(period: Optional[str]) -> Optional[date]:
+    """Nejstarší datum spadající do zvoleného období, None pro 'všechno'"""
+    days = _PERIOD_DAYS.get(period or "all")
+    if days is None:
+        return None
+    return date.today() - timedelta(days=days)
+
 def _consumption(previous_value: float, current_value: float, replaced: bool) -> Optional[float]:
     """Spotřeba mezi dvěma odečty, nebo None pokud byl mezitím vyměněn měřič"""
     if replaced:
@@ -30,22 +51,15 @@ def _fve_production(previous_value: Optional[float], current_value: Optional[flo
 @router.get("/grafy/data", response_model=ChartData)
 async def get_chart_data(
     db: Session = Depends(get_db),
-    period: Optional[str] = Query(None, description="Časové období: 'year' (poslední rok), '2years' (poslední 2 roky), 'all' (všechno)")
+    period: Optional[str] = Query(None, description=_PERIOD_DESCRIPTION)
 ):
     """Získání dat pro grafy spotřeby - zobrazuje kumulativní hodnoty měřičů (celkové stavy)"""
     
-    # Určení časového filtru
-    if period == "year":
-        # Poslední rok
-        cutoff_date = date.today() - timedelta(days=365)
-        query = db.query(Spotreba).filter(Spotreba.datum >= cutoff_date)
-    elif period == "2years":
-        # Poslední 2 roky
-        cutoff_date = date.today() - timedelta(days=730)
-        query = db.query(Spotreba).filter(Spotreba.datum >= cutoff_date)
-    else:
-        # Všechno (výchozí)
-        query = db.query(Spotreba)
+    cutoff_date = _period_cutoff(period)
+    
+    query = db.query(Spotreba)
+    if cutoff_date:
+        query = query.filter(Spotreba.datum >= cutoff_date)
     
     # Získání záznamů seřazených podle data
     records = query.order_by(Spotreba.datum.desc()).all()
@@ -98,21 +112,16 @@ async def get_chart_data(
 @router.get("/grafy/monthly-diff", response_model=ChartData)
 async def get_monthly_diff_data(
     db: Session = Depends(get_db),
-    period: Optional[str] = Query(None, description="Časové období: 'year' (poslední rok), '2years' (poslední 2 roky), 'all' (všechno)")
+    period: Optional[str] = Query(None, description=_PERIOD_DESCRIPTION)
 ):
     """Získání dat pro grafy spotřeby - zobrazuje skutečnou měsíční spotřebu (přírůstky)"""
     
-    # Pro výpočet rozdílů potřebujeme o jeden záznam více do minulosti
-    if period == "year":
-        cutoff_date = date.today() - timedelta(days=365 + 31)
-    elif period == "2years":
-        cutoff_date = date.today() - timedelta(days=730 + 31)
-    else:
-        cutoff_date = None
-        
+    cutoff_date = _period_cutoff(period)
+    
     query = db.query(Spotreba)
     if cutoff_date:
-        query = query.filter(Spotreba.datum >= cutoff_date)
+        # Rozdíl u prvního odečtu v období potřebuje ještě předchozí záznam
+        query = query.filter(Spotreba.datum >= cutoff_date - timedelta(days=31))
         
     records = query.order_by(Spotreba.datum.asc()).all()
     
@@ -136,9 +145,7 @@ async def get_monthly_diff_data(
         curr = records[i]
         
         # Oříznutí výsledků přesně na požadované období (pokud jsme brali záznam navíc)
-        if period == "year" and curr.datum < date.today() - timedelta(days=365):
-            continue
-        if period == "2years" and curr.datum < date.today() - timedelta(days=730):
+        if cutoff_date and curr.datum < cutoff_date:
             continue
             
         labels.append(curr.datum.strftime('%d.%m.%Y'))

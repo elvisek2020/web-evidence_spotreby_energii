@@ -78,16 +78,13 @@
         </div>
         
         <!-- Pravé tlačítka -->
-        <div class="flex flex-wrap gap-4">
-            <button onclick="changePeriod('year')" id="period-year" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors">
-                Poslední rok
-            </button>
-            <button onclick="changePeriod('2years')" id="period-2years" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors border border-gray-300">
-                Dva roky
-            </button>
-            <button onclick="changePeriod('all')" id="period-all" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors border border-gray-300">
-                Všechno
-            </button>
+        <div class="inline-flex rounded-md shadow-sm" role="group" id="period-buttons">
+            <button onclick="changePeriod('3months')" id="period-3months">3 měsíce</button>
+            <button onclick="changePeriod('6months')" id="period-6months">6 měsíců</button>
+            <button onclick="changePeriod('year')" id="period-year">1 rok</button>
+            <button onclick="changePeriod('2years')" id="period-2years">2 roky</button>
+            <button onclick="changePeriod('3years')" id="period-3years">3 roky</button>
+            <button onclick="changePeriod('all')" id="period-all">Vše</button>
         </div>
     </div>
 </section>
@@ -110,7 +107,7 @@
         <p>• Můžete přepnout na zobrazení celkových stavů měřičů (kumulativní hodnoty)</p>
         <p>• Můžete zapínat/vypínat jednotlivé typy měřičů pomocí zaškrtávacích políček</p>
         <p>• Přepínání mezi čárovým a sloupcovým grafem pomocí tlačítka vlevo dole</p>
-        <p>• Filtrování podle časového období pomocí tlačítek vpravo dole</p>
+        <p>• Filtrování podle časového období pomocí tlačítek vpravo dole (3 měsíce až 3 roky nebo vše)</p>
         <p>• Meziroční porovnání ukazuje rozdíl spotřeby oproti předchozímu roku</p>
     </div>
 </section>
@@ -130,6 +127,27 @@ let datasetVisibility = {
     'vodomer': true,
     'fve': true
 };
+
+const periodKeys = ['3months', '6months', 'year', '2years', '3years', 'all'];
+
+function periodButtonClass(index, active) {
+    const shape = index === 0
+        ? 'rounded-l-lg'
+        : (index === periodKeys.length - 1 ? 'rounded-r-lg -ml-px' : '-ml-px');
+    const colors = active
+        ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
+        : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600';
+    return `px-3 py-2 text-sm font-medium border transition-colors focus:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${shape} ${colors}`;
+}
+
+function updatePeriodButtons() {
+    periodKeys.forEach((key, index) => {
+        const button = document.getElementById(`period-${key}`);
+        if (button) button.className = periodButtonClass(index, key === currentPeriod);
+    });
+}
+
+updatePeriodButtons();
 
 let chartWaitAttempts = 0;
 const maxChartWaitAttempts = 50;
@@ -429,7 +447,9 @@ async function loadYoYData() {
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">`;
 
-        years.forEach((y, i) => {
+        // Nejnovější rok nahoře; porovnává se vždy s předchozím rokem, tedy s nižším indexem
+        for (let i = years.length - 1; i >= 0; i--) {
+            const y = years[i];
             const prev = i > 0 ? years[i - 1] : null;
             html += `
                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
@@ -466,7 +486,7 @@ async function loadYoYData() {
                         </div>
                     </td>
                 </tr>`;
-        });
+        }
 
         html += '</tbody></table></div>';
         container.innerHTML = html;
@@ -477,20 +497,9 @@ async function loadYoYData() {
 
 // Funkce pro změnu časového období
 function changePeriod(period) {
+    if (currentPeriod === period) return;
     currentPeriod = period;
-    
-    // Aktualizace vzhledu tlačítek (v pořadí: year, 2years, all)
-    const buttons = ['year', '2years', 'all'];
-    buttons.forEach(btn => {
-        const button = document.getElementById(`period-${btn}`);
-        if (btn === period) {
-            button.className = 'inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors';
-        } else {
-            button.className = 'inline-flex items-center px-4 py-2 bg-white text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors border border-gray-300';
-        }
-    });
-    
-    // Načtení nových dat
+    updatePeriodButtons();
     loadChartData();
 }
 </script>
