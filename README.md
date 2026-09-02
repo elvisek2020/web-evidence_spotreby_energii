@@ -18,7 +18,7 @@ Aplikace je určena pro všechny, kteří chtějí systematicky sledovat svou sp
 - ✅ **Automatické doplnění** - Návrhy pro měsíce bez odečtu, stavy měřičů lineární interpolací podle skutečného odstupu dnů
 - ✅ **CRUD operace** - Kompletní správa záznamů (vytvoření, editace, mazání)
 - ✅ **Výměna měřiče** - Označení v editaci záznamu; skok stavu se pak nepočítá jako spotřeba v tabulce, grafech ani meziročním porovnání
-- ✅ **Filtrování dat** - Přepínání mezi všemi a pouze manuálními záznamy
+- ✅ **Filtrování dat** - Checkbox „Zobrazit pouze odečty“ v přehledu skryje automaticky doplněné odhady
 
 ## 📖 Použití
 

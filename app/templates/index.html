@@ -90,11 +90,11 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                             {% if record.source %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300">
                                     Odhad
                                 </span>
                             {% else %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
                                     Odečet
                                 </span>
                             {% endif %}
@@ -118,8 +118,8 @@
                                 <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
-                                <h3 class="text-lg font-medium text-gray-900 mb-2">Žádné záznamy k zobrazení</h3>
-                                <p class="text-gray-500 mb-4">Začněte přidáním nového záznamu spotřeby</p>
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Žádné záznamy k zobrazení</h3>
+                                <p class="text-gray-500 dark:text-gray-400 mb-4">Začněte přidáním nového záznamu spotřeby</p>
                                 <a href="/evidovat" class="btn-enhanced inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors shadow-sm">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -134,9 +134,16 @@
         </table>
     </div>
     
-    <!-- Stránkování -->
-    <div id="pagination-container" class="mt-6 flex justify-center">
-        <!-- Stránkování se načte dynamicky -->
+    <!-- Filtr a stránkování -->
+    <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+            <input type="checkbox" id="only-manual" autocomplete="off" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">
+            Zobrazit pouze odečty
+        </label>
+        
+        <div id="pagination-container">
+            <!-- Stránkování se načte dynamicky -->
+        </div>
     </div>
 </section>
 
@@ -167,6 +174,12 @@ let currentPage = 1;
 const recordsPerPage = 15;
 let totalRecords = 0;
 let totalPages = 0;
+let onlyManual = false;
+
+// Filtr se posílá jen při zapnutém omezení, jinak se zobrazují i doplněné odhady
+function sourceFilterParams() {
+    return onlyManual ? { source_filter: 'false' } : {};
+}
 
 async function loadData(page = 1) {
     const tbody = document.getElementById('data-table-body');
@@ -177,7 +190,7 @@ async function loadData(page = 1) {
             <td colspan="8" class="px-6 py-16 text-center">
                 <div class="flex flex-col items-center">
                     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-                    <p class="text-gray-500">Načítání dat...</p>
+                    <p class="text-gray-500 dark:text-gray-400">Načítání dat...</p>
                 </div>
             </td>
         </tr>
@@ -186,7 +199,8 @@ async function loadData(page = 1) {
     try {
         // Načti záznamy s stránkováním
         const offset = (page - 1) * recordsPerPage;
-        const response = await fetch(`/api/spotreba?limit=${recordsPerPage}&offset=${offset}`);
+        const params = new URLSearchParams({ limit: recordsPerPage, offset, ...sourceFilterParams() });
+        const response = await fetch(`/api/spotreba?${params}`);
         const data = await response.json();
         
         // Aktualizace tabulky
@@ -207,8 +221,8 @@ async function loadData(page = 1) {
                         <svg class="w-12 h-12 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">Chyba při načítání dat</h3>
-                        <p class="text-gray-500 mb-4">Zkuste obnovit stránku nebo kontaktujte podporu</p>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Chyba při načítání dat</h3>
+                        <p class="text-gray-500 dark:text-gray-400 mb-4">Zkuste obnovit stránku nebo kontaktujte podporu</p>
                         <button onclick="loadData()" class="btn-enhanced inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors shadow-sm">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -233,8 +247,8 @@ function updateTable(data) {
                         <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">Žádné záznamy k zobrazení</h3>
-                        <p class="text-gray-500 mb-4">Začněte přidáním nového záznamu spotřeby</p>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Žádné záznamy k zobrazení</h3>
+                        <p class="text-gray-500 dark:text-gray-400 mb-4">Začněte přidáním nového záznamu spotřeby</p>
                         <a href="/evidovat" class="btn-enhanced inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors shadow-sm">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -347,7 +361,8 @@ async function deleteRecord(id) {
 // Načti celkový počet záznamů
 async function loadTotalCount() {
     try {
-        const response = await fetch('/api/spotreba/count');
+        const params = new URLSearchParams(sourceFilterParams());
+        const response = await fetch(`/api/spotreba/count?${params}`);
         const data = await response.json();
         totalRecords = data.count;
         totalPages = Math.ceil(totalRecords / recordsPerPage);
@@ -355,6 +370,10 @@ async function loadTotalCount() {
         console.error('Chyba při načítání počtu záznamů:', error);
     }
 }
+
+const pageButtonClass = 'px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors';
+const pageDisabledClass = 'px-3 py-2 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md cursor-not-allowed';
+const pageEllipsisClass = 'px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400';
 
 // Aktualizace stránkování
 function updatePagination() {
@@ -371,14 +390,13 @@ function updatePagination() {
     // Předchozí stránka
     if (currentPage > 1) {
         paginationHTML += `
-            <button onclick="loadData(${currentPage - 1})" 
-                    class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700">
+            <button onclick="loadData(${currentPage - 1})" class="${pageButtonClass}">
                 Předchozí
             </button>
         `;
     } else {
         paginationHTML += `
-            <span class="px-3 py-2 text-sm font-medium text-gray-300 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed">
+            <span class="${pageDisabledClass}">
                 Předchozí
             </span>
         `;
@@ -390,13 +408,12 @@ function updatePagination() {
     
     if (startPage > 1) {
         paginationHTML += `
-            <button onclick="loadData(1)" 
-                    class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700">
+            <button onclick="loadData(1)" class="${pageButtonClass}">
                 1
             </button>
         `;
         if (startPage > 2) {
-            paginationHTML += '<span class="px-3 py-2 text-sm font-medium text-gray-500">...</span>';
+            paginationHTML += `<span class="${pageEllipsisClass}">...</span>`;
         }
     }
     
@@ -409,8 +426,7 @@ function updatePagination() {
             `;
         } else {
             paginationHTML += `
-                <button onclick="loadData(${i})" 
-                        class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700">
+                <button onclick="loadData(${i})" class="${pageButtonClass}">
                     ${i}
                 </button>
             `;
@@ -419,11 +435,10 @@ function updatePagination() {
     
     if (endPage < totalPages) {
         if (endPage < totalPages - 1) {
-            paginationHTML += '<span class="px-3 py-2 text-sm font-medium text-gray-500">...</span>';
+            paginationHTML += `<span class="${pageEllipsisClass}">...</span>`;
         }
         paginationHTML += `
-            <button onclick="loadData(${totalPages})" 
-                    class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700">
+            <button onclick="loadData(${totalPages})" class="${pageButtonClass}">
                 ${totalPages}
             </button>
         `;
@@ -432,14 +447,13 @@ function updatePagination() {
     // Další stránka
     if (currentPage < totalPages) {
         paginationHTML += `
-            <button onclick="loadData(${currentPage + 1})" 
-                    class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-700">
+            <button onclick="loadData(${currentPage + 1})" class="${pageButtonClass}">
                 Další
             </button>
         `;
     } else {
         paginationHTML += `
-            <span class="px-3 py-2 text-sm font-medium text-gray-300 bg-gray-100 border border-gray-300 rounded-md cursor-not-allowed">
+            <span class="${pageDisabledClass}">
                 Další
             </span>
         `;
@@ -450,7 +464,7 @@ function updatePagination() {
     const endRecord = Math.min(currentPage * recordsPerPage, totalRecords);
     
     paginationHTML += `
-        <div class="ml-4 text-sm text-gray-700">
+        <div class="ml-4 text-sm text-gray-700 dark:text-gray-300">
             Zobrazeno ${startRecord}-${endRecord} z ${totalRecords} záznamů
         </div>
     `;
@@ -483,9 +497,25 @@ document.addEventListener('click', function(e) {
 });
 
 document.addEventListener('DOMContentLoaded', async function() {
+    const onlyManualCheckbox = document.getElementById('only-manual');
+    if (onlyManualCheckbox) {
+        onlyManualCheckbox.addEventListener('change', function() {
+            onlyManual = this.checked;
+            loadData(1);
+        });
+        // Prohlížeč může po reloadu obnovit zaškrtnutí, serverem vykreslená tabulka je ale nefiltrovaná
+        onlyManual = onlyManualCheckbox.checked;
+    }
+    
+    loadStats();
+    
+    if (onlyManual) {
+        loadData(1);
+        return;
+    }
+    
     await loadTotalCount();
     updatePagination();
-    loadStats();
 });
 </script>
 {% endblock %}
