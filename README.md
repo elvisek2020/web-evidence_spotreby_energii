@@ -14,13 +14,13 @@ Aplikace je určená pro domácnost, která chce mít přehled o vývoji spotře
 
 ## ✨ Funkce
 
-- ✅ **Evidování odečtů** – stavy elektroměru (VT/NT), plynoměru, vodoměru a počítadla FVE s validací; výchozí datum je dnešek, poslední ruční odečet je v polích jen jako nápověda
+- ✅ **Evidování odečtů** – stavy elektroměru (VT/NT), plynoměru, vodoměru a počítadla FVE s validací; výchozí datum je dnešek a pole jsou předvyplněná stavy posledního ručního odečtu, takže stačí přepsat, co se změnilo
 - ✅ **Kontrola návaznosti** – když je stav nižší než předchozí ruční odečet (nebo vyšší než následující), formulář se vrátí s varováním; pokles jde rovnou uložit jako výměnu měřiče
 - ✅ **Přehled** – tabulka s rozdílem oproti předchozímu záznamu (i na konci stránky), stránkování po 15 záznamech, filtr „Jen odečty“, počty odečtů a odhadů, upozornění na chybějící odečet v aktuálním měsíci a export do CSV
 - ✅ **Výměna měřiče** – příznak u jednotlivých měřičů; skok stavu se nepočítá jako spotřeba v tabulce, grafech ani meziročním porovnání
-- ✅ **Měsíční spotřeba** – rozpočet do kalendářních měsíců podle dní mezi ručními odečty; samostatné grafy pro elektřinu a FVE (kWh), plyn a vodu (m³), každý s jednou osou, odlišení dopočtených měsíců, tabulka hodnot a upozornění na poklesy stavu bez označené výměny
+- ✅ **Měsíční spotřeba** – rozpočet do kalendářních měsíců podle dní mezi ručními odečty; samostatné grafy pro elektřinu a FVE (kWh), plyn a vodu (m³), každý s jednou osou, odlišení dopočtených měsíců a tabulka hodnot
 - ✅ **Stavy měřičů** – průběh stavů měřičů u všech záznamů, odhady jako duté body
-- ✅ **Meziroční porovnání** – spotřeba po kalendářních letech; rozpracovaný rok se srovnává se stejným obdobím loňska, u FVE je vyšší výroba „lepší“
+- ✅ **Meziroční porovnání** – spotřeba po kalendářních letech ve sbalitelné kartě pod grafy (výchozí sbalená); rozpracovaný rok se srovnává se stejným obdobím loňska, u FVE je vyšší výroba „lepší“
 - ✅ **Chybějící data** – návrhy odhadů pro měsíce bez odečtu, přehled mezer, které automaticky doplnit nejde, a kontrola uložených odhadů s hromadným přepočtem
 - ✅ **Automatický přepočet odhadů** – po přidání, opravě nebo smazání ručního odečtu se odhady v jeho okolí dopočítají znovu
 - ✅ **Jednotný vzhled** – design systém `app.css` (standard web-app-ui, paleta Personal): stejná tlačítka, karty a formuláře na všech stránkách, přepínač motivu Systém / Světlý / Tmavý a široké stránky v zápatí, na mobilu spodní lišta menu a seznam místo tabulky
@@ -29,10 +29,10 @@ Aplikace je určená pro domácnost, která chce mít přehled o vývoji spotře
 
 ### Základní workflow
 
-1. **Nový odečet** – v záložce „Evidovat“ vyplňte datum a stavy všech měřičů (FVE neevidujete = 0) a uložte tlačítkem nebo Ctrl+S / ⌘S. Když stav nenavazuje na okolní ruční odečty, formulář se vrátí s varováním a volbami *Uložit přesto* a *Uložit jako výměnu měřiče* – nebo hodnoty opravte a uložte znovu.
+1. **Nový odečet** – v záložce „Evidovat“ jsou pole předvyplněná posledním ručním odečtem; zkontrolujte datum, přepište stavy, které se změnily (FVE neevidujete = 0), a uložte tlačítkem nebo Ctrl+S / ⌘S. Když stav nenavazuje na okolní ruční odečty, formulář se vrátí s varováním a volbami *Uložit přesto* a *Uložit jako výměnu měřiče* – nebo hodnoty opravte a uložte znovu.
 2. **Přehled** – na hlavní stránce jsou záznamy od nejnovějšího s rozdíly. Filtr „Jen odečty“ skryje odhady a u rozdílu ukáže délku intervalu. Tlačítkem „Export CSV“ stáhnete všechny záznamy pro Excel.
 3. **Oprava a výměna měřiče** – v editaci záznamu opravíte hodnoty nebo označíte měřič, který byl u odečtu vyměněn (příznak patří na první odečet nového měřiče).
-4. **Grafy** – měsíční spotřeba nebo stavy měřičů za zvolené období, tabulka hodnot a meziroční porovnání.
+4. **Grafy** – měsíční spotřeba nebo stavy měřičů za zvolené období, pod nimi sbalitelná tabulka hodnot a meziroční porovnání.
 5. **Chybějící data** – vytvořte odhady pro měsíce bez odečtu a zkontrolujte, že uložené odhady odpovídají odečtům.
 
 ## 🧮 Jak aplikace počítá
@@ -45,7 +45,7 @@ Výpočty jsou v jednom modulu `app/services/vypocty.py` (čisté funkce pokryt�
 - **Dopočtené měsíce** – měsíc spočtený z intervalu, ve kterém leží celý kalendářní měsíc bez ručního odečtu, je označený jako dopočtený: v grafu světlejší sloupec, v tabulce hodnot i v meziročním porovnání „≈“. Při řídkých odečtech je takových měsíců většina (viz Známá omezení).
 - **Výměna měřiče** – interval končící odečtem s příznakem výměny není spotřeba. Měsíc, do kterého zasahuje, je u daného měřiče prázdný, a rok s výměnou nejde meziročně srovnat.
 - **FVE** – počítadlo je kumulativní; hodnota 0 znamená „neevidováno“. Ve statistikách se nula přemostí k další nenulové hodnotě, v tabulce rozdíl zůstane prázdný.
-- **Anomálie** – pokles stavu mezi ručními odečty bez příznaku výměny se ze součtů nevyhazuje (překlep se vyruší s dalším nafouknutým intervalem), jen se na něj upozorní pod grafem.
+- **Anomálie** – pokles stavu mezi ručními odečty bez příznaku výměny se ze součtů nevyhazuje (překlep se vyruší s dalším nafouknutým intervalem). Před uložením na pokles upozorní kontrola návaznosti, v přehledu je záporný rozdíl červeně a JSON API grafů ho vrací v poli `anomalie`.
 - **Meziroční porovnání** – rok Y se srovnává se stejným obdobím roku Y−1 (u rozpracovaného roku do stejného dne; 29. 2. se posune na 1. 3.). Srovnání se ukáže jen tehdy, když má měřič pokrytá obě období celá.
 - **Odhady chybějících měsíců** – návrh se zakládá k 1. dni měsíce bez odečtu, hodnoty jsou lineární odhad podle dní mezi okolními ručními odečty. Mezeru s výměnou měřiče (nebo bez navazujícího ručního odečtu) aplikace přeskočí a vypíše s důvodem.
 - **Přepočet odhadů** – po změně ručního odečtu se v jedné transakci přepočítají odhady mezi předchozím a následujícím ručním odečtem. Úprava samotného odhadu přepočet nespouští; při další změně okolních odečtů se ale přepíše. Starší nesrovnalosti ukáže a po potvrzení opraví „Kontrola uložených odhadů“ na stránce Chybějící data – typicky odhady z verzí před 31. 8. 2026, které dělily mezeru rovnoměrně podle pořadí měsíce, ne podle dní.
@@ -290,6 +290,7 @@ Zarovnání: tlačítka a skupiny tlačítek jsou vždy **vpravo** – akce v hl
 - Ručně upravený odhad se při další změně okolních ručních odečtů přepíše – skutečný odečet je potřeba převést na ruční (v editaci zrušit „Automaticky doplněný odhad“)
 - Mezeru s výměnou měřiče je potřeba doplnit ručně, automatický návrh ji přeskočí
 - Probíhající měsíc se v měsíčním grafu ukáže až po dalším odečtu
+- Předvyplněný stav, který při evidenci nepřepíšete, se uloží beze změny (nulová spotřeba za období) – kontrola návaznosti na to neupozorní
 - Při řídkých odečtech je měsíční spotřeba jen rovnoměrný rozpočet dlouhého intervalu: sezónní průběh (topení plynem, výroba FVE) se vyrovná a měsíce jsou označené „≈“. Stejně se podle dní dělí interval přes přelom roku, což ovlivní roční součty i meziroční srovnání. Přesné měsíce dají odečty jednou měsíčně, nejlépe kolem přelomu měsíce.
 
 ### 📚 Další zdroje

@@ -142,12 +142,16 @@ def _hodnoty_zaznamu(zaznam: Spotreba) -> dict[str, str]:
     return hodnoty
 
 
-def _napovedy(db: Session, zaznam: Optional[Spotreba]) -> dict[str, str]:
-    """Poslední ruční odečet před upravovaným záznamem (u nového poslední vůbec) jako nápověda k polím"""
+def _predchozi_odecet(db: Session, zaznam: Optional[Spotreba]) -> Optional[Spotreba]:
+    """Poslední ruční odečet před upravovaným záznamem, u nového odečtu poslední vůbec"""
     dotaz = db.query(Spotreba).filter(Spotreba.source.is_(False))
     if zaznam is not None:
         dotaz = dotaz.filter(Spotreba.datum < zaznam.datum)
-    predchozi = dotaz.order_by(Spotreba.datum.desc()).first()
+    return dotaz.order_by(Spotreba.datum.desc()).first()
+
+
+def _napovedy(predchozi: Optional[Spotreba]) -> dict[str, str]:
+    """Stavy předchozího ručního odečtu jako nápověda pod poli formuláře"""
     if predchozi is None:
         return {}
     napovedy = {}
@@ -173,7 +177,7 @@ def _formular_odectu(
         "zaznam": zaznam,
         # Desetinná čárka by v poli type=number zmizela
         "hodnoty": {klic: hodnota.replace(",", ".") for klic, hodnota in hodnoty.items()},
-        "napovedy": _napovedy(db, zaznam),
+        "napovedy": _napovedy(_predchozi_odecet(db, zaznam)),
         "today": date.today().isoformat(),
         "varovani": [popis_varovani(polozka) for polozka in varovani],
         "pokles": any(polozka.typ == "nizsi_nez_predchozi" for polozka in varovani),
@@ -218,8 +222,13 @@ def _ulozit_odecet(request: Request, db: Session, pole: dict, zaznam: Optional[S
 
 @router.get("/evidovat", response_class=HTMLResponse)
 def evidovat(request: Request, db: Session = Depends(get_db)):
-    """Formulář nového odečtu"""
-    return _formular_odectu(request, db, None, {"datum": date.today().isoformat()})
+    """Formulář nového odečtu předvyplněný stavy posledního ručního odečtu – stačí přepsat, co se změnilo"""
+    hodnoty = {"datum": date.today().isoformat()}
+    predchozi = _predchozi_odecet(db, None)
+    if predchozi is not None:
+        for meter in METERS:
+            hodnoty[meter.key] = cislo_input(getattr(predchozi, meter.key) or 0)
+    return _formular_odectu(request, db, None, hodnoty)
 
 
 @router.post("/evidovat", response_class=HTMLResponse)
@@ -263,7 +272,8 @@ def grafy(
         "obdobi": obdobi,
         "volby_obdobi": [(klic, popisek) for klic, popisek, *_ in grafy_data.OBDOBI],
         "graf": data,
-        "graf_json": data.model_dump(mode="json"),
+        # Anomálie stránka nezobrazuje, vrací je jen JSON API
+        "graf_json": data.model_dump(mode="json", exclude={"anomalie"}),
         "roky": vypocty.rocni(zaznamy),
     })
 

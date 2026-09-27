@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
-{% from "_macros.html" import alert, empty_state %}
+{% from "_macros.html" import empty_state %}
 
 {% block title %}Grafy — {{ app_name }}{% endblock %}
 
@@ -46,19 +46,6 @@
     <a href="?rezim={{ rezim }}&obdobi={{ klic }}" class="chip {% if obdobi == klic %}chip--active{% endif %}"{% if obdobi == klic %} aria-current="true"{% endif %}>{{ popisek }}</a>
     {% endfor %}
 </div>
-
-{% if graf.anomalie %}
-    {% call alert('warn') %}
-        <strong>Stav měřiče klesl bez označené výměny</strong>
-        <ul>
-            {% for nalez in graf.anomalie[:10] %}
-            <li>{{ nalez.label }}: {{ nalez.od|datum_kratke }} → {{ nalez.do|datum_kratke }}, pokles o {{ (-nalez.spotreba)|cislo_cz }} {{ nalez.jednotka }}</li>
-            {% endfor %}
-            {% if graf.anomalie|length > 10 %}<li>… a další ({{ graf.anomalie|length - 10 }})</li>{% endif %}
-        </ul>
-        <p class="text-sm mt-2">Zkontrolujte odečty v přehledu, případně u novějšího odečtu označte výměnu měřiče.</p>
-    {% endcall %}
-{% endif %}
 
 {% if graf.popisky %}
 <script type="application/json" id="graf-data">{{ {'rezim': rezim, 'data': graf_json, 'merice': METERS_INFO}|tojson }}</script>
@@ -124,13 +111,13 @@
 </section>
 {% endif %}
 
-<section class="card mt-5">
-    <div class="card-header">
+<details class="card mt-5" id="mezirocni-porovnani" data-remember-open>
+    <summary class="card-header">
         <div>
             <h2 class="card-title">Meziroční porovnání</h2>
             <p class="card-subtitle">Spotřeba po kalendářních letech a rozdíl oproti stejnému období předchozího roku</p>
         </div>
-    </div>
+    </summary>
     {% if roky %}
     <div class="table-wrap">
         <table class="table">
@@ -184,7 +171,7 @@
     {% else %}
     <div class="card-body text-muted">Pro meziroční porovnání jsou potřeba aspoň dva ruční odečty.</div>
     {% endif %}
-</section>
+</details>
 
 <details class="card mt-5" id="napoveda-grafy" data-remember-open>
     <summary class="card-header"><h2 class="card-title">Nápověda</h2></summary>

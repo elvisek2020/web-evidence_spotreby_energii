@@ -6,7 +6,10 @@
 <div class="page-header">
     <div class="page-header-text">
         <h1 class="page-title">Nový odečet</h1>
-        <p class="page-description">Zapište stavy všech měřičů k jednomu dni.</p>
+        <p class="page-description">
+            {% if napovedy %}Pole jsou předvyplněná posledním ručním odečtem – přepište stavy, které se změnily.
+            {% else %}Zapište stavy všech měřičů k jednomu dni.{% endif %}
+        </p>
     </div>
 </div>
 
@@ -16,7 +19,7 @@
     <summary class="card-header"><h2 class="card-title">Nápověda</h2></summary>
     <div class="card-body">
         <ul class="napoveda">
-            <li>Pod každým polem je předchozí ruční odečet – slouží jen jako vodítko.</li>
+            <li>Pole jsou předvyplněná posledním ručním odečtem, jeho datum a stav jsou i pod polem. Stav, který nepřepíšete, se uloží beze změny – spotřeba za období pak vyjde nulová.</li>
             <li>Pokud FVE neevidujete, zadejte do počítadla 0 – výroba se pak za dané období nepočítá.</li>
             <li>Když je stav nižší než předchozí odečet, aplikace se zeptá, jestli nešlo o výměnu měřiče.</li>
             <li>Po uložení se automaticky přepočítají odhady v okolí nového odečtu.</li>
