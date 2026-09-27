@@ -19,11 +19,13 @@
 {%- endmacro -%}
 
 {#- Pole stavu měřiče ve formuláři odečtu -#}
-{%- macro pole_merice(meter, hodnota, napoveda=none) -%}
+{#- Nový odečet jen v celých číslech; úprava připouští setiny, protože je mají uložené odhady -#}
+{%- macro pole_merice(meter, hodnota, napoveda=none, cela_cisla=false) -%}
 <div class="form-group">
     <label class="form-label" for="{{ meter.key }}">{{ meter.label }} ({{ meter.jednotka }})</label>
     <input class="input" type="number" id="{{ meter.key }}" name="{{ meter.key }}" value="{{ hodnota or '' }}"
-           required min="0" max="9999999.99" step="0.01" inputmode="decimal"
+           required min="0" max="9999999.99"
+           {%- if cela_cisla %} step="1" inputmode="numeric"{% else %} step="0.01" inputmode="decimal"{% endif %}
            {%- if napoveda %} aria-describedby="{{ meter.key }}-napoveda"{% endif %}>
     {% if napoveda %}<p class="form-hint" id="{{ meter.key }}-napoveda">{{ napoveda }}</p>{% endif %}
 </div>

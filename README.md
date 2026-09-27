@@ -14,7 +14,7 @@ Aplikace je určená pro domácnost, která chce mít přehled o vývoji spotře
 
 ## ✨ Funkce
 
-- ✅ **Evidování odečtů** – stavy elektroměru (VT/NT), plynoměru, vodoměru a počítadla FVE s validací; výchozí datum je dnešek a pole jsou předvyplněná stavy posledního ručního odečtu, takže stačí přepsat, co se změnilo
+- ✅ **Evidování odečtů** – stavy elektroměru (VT/NT), plynoměru, vodoměru a počítadla FVE s validací; výchozí datum je dnešek a pole jsou předvyplněná stavy posledního ručního odečtu, takže stačí přepsat, co se změnilo; nový odečet se zapisuje v celých číslech (úprava záznamu připouští setiny kvůli uloženým odhadům)
 - ✅ **Kontrola návaznosti** – když je stav nižší než předchozí ruční odečet (nebo vyšší než následující), formulář se vrátí s varováním; pokles jde rovnou uložit jako výměnu měřiče
 - ✅ **Přehled** – tabulka s rozdílem oproti předchozímu záznamu (i na konci stránky), stránkování po 15 záznamech, filtr „Jen odečty“, počty odečtů a odhadů, upozornění na chybějící odečet v aktuálním měsíci a export do CSV
 - ✅ **Výměna měřiče** – příznak u jednotlivých měřičů; skok stavu se nepočítá jako spotřeba v tabulce, grafech ani meziročním porovnání

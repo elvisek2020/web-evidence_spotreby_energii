@@ -227,7 +227,8 @@ def evidovat(request: Request, db: Session = Depends(get_db)):
     predchozi = _predchozi_odecet(db, None)
     if predchozi is not None:
         for meter in METERS:
-            hodnoty[meter.key] = cislo_input(getattr(predchozi, meter.key) or 0)
+            # Nový odečet se zapisuje v celých číslech (pole má step=1)
+            hodnoty[meter.key] = str(round(getattr(predchozi, meter.key) or 0))
     return _formular_odectu(request, db, None, hodnoty)
 
 
