@@ -4,7 +4,7 @@ Webová aplikace pro evidenci stavů měřičů energií (elektřina ve vysokém
 
 Produkce: **https://spotreba.elvisek.cz**
 
-![Screenshot aplikace](images/screen_spotreba.png)
+![Přehled odečtů ve světlém motivu (vymyšlená testovací data)](images/screen_spotreba.png)
 
 ## 📋 Popis
 
