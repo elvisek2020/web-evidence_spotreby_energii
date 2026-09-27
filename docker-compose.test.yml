@@ -1,0 +1,36 @@
+# Lokální testovací prostředí: aplikace + prázdná MariaDB, bez vazby na produkční databázi
+#
+#   docker compose -f docker-compose.test.yml up -d --build
+#   python3 scripts/testovaci_data.py          # vymyšlená data přes API
+#   open http://localhost:18080
+#   docker compose -f docker-compose.test.yml down -v
+name: spotreba-test
+
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: test
+      MARIADB_DATABASE: spotreba
+      MARIADB_USER: spotreba
+      MARIADB_PASSWORD: spotreba
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: spotreba
+      DB_USER: spotreba
+      DB_PASSWORD: spotreba
+      LOG_LEVEL: DEBUG
+    ports:
+      - "127.0.0.1:18080:8000"
+    depends_on:
+      db:
+        condition: service_healthy

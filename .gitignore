@@ -1,5 +1,8 @@
 .env
-_DOCS
+_docs/
 _backup/
 .DS_Store
 .gitignore
+__pycache__/
+.pytest_cache/
+.venv/

@@ -10,18 +10,18 @@ function escapeHtml(str) {
 function showToast(message, type = 'info', duration = 5000) {
     const container = document.getElementById('toast-container');
     if (!container) return;
-    
+
     const toast = document.createElement('div');
     const toastId = 'toast-' + Date.now();
     const safeType = ['success', 'error', 'warning', 'info'].includes(type) ? type : 'info';
-    
+
     const colors = {
         success: 'bg-green-50 border-green-200 text-green-800',
         error: 'bg-red-50 border-red-200 text-red-800',
         warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
         info: 'bg-blue-50 border-blue-200 text-blue-800'
     };
-    
+
     const icons = {
         success: `<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>`,
         error: `<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>`,
@@ -56,13 +56,13 @@ function showToast(message, type = 'info', duration = 5000) {
         </div>
     `;
     alertDiv.querySelector('.ml-3').appendChild(msgEl);
-    
+
     toast.id = toastId;
     toast.appendChild(alertDiv);
     container.appendChild(toast);
 
     let autoCloseTimer = setTimeout(() => closeToast(toastId), duration);
-    
+
     toast.addEventListener('mouseenter', () => clearTimeout(autoCloseTimer));
     toast.addEventListener('mouseleave', () => {
         autoCloseTimer = setTimeout(() => closeToast(toastId), duration);
@@ -84,7 +84,65 @@ function closeToast(toastId) {
     }
 }
 
+// Toast, který přežije přesměrování nebo znovunačtení stránky
+function flashToast(message, type = 'success') {
+    try {
+        sessionStorage.setItem('flashToast', JSON.stringify({ message, type }));
+    } catch (e) {
+        // Úložiště nemusí být dostupné (soukromé okno), hláška se pak jen nezobrazí
+    }
+}
+
+function showFlashToast() {
+    let flash = null;
+    try {
+        flash = JSON.parse(sessionStorage.getItem('flashToast') || 'null');
+        sessionStorage.removeItem('flashToast');
+    } catch (e) {
+        return;
+    }
+    if (flash && flash.message) showToast(flash.message, flash.type);
+}
+
+document.addEventListener('DOMContentLoaded', showFlashToast);
+
+// Text chyby z odpovědi API; detail bývá řetězec, u chyb validace pole objektů
+function formatApiError(body, fallback = 'Neznámá chyba') {
+    const detail = body && body.detail;
+    if (typeof detail === 'string' && detail) return detail;
+    if (Array.isArray(detail)) {
+        const zpravy = detail
+            .map(chyba => String((chyba && chyba.msg) || '').replace(/^Value error, /, ''))
+            .filter(Boolean);
+        if (zpravy.length) return zpravy.join('; ');
+    }
+    return fallback;
+}
+
+// Volání API s JSON tělem; při chybě vyhodí Error s hláškou pro uživatele
+async function apiFetch(url, { json, ...options } = {}) {
+    const init = { ...options, headers: { ...(options.headers || {}) } };
+    if (json !== undefined) {
+        init.body = JSON.stringify(json);
+        init.headers['Content-Type'] = 'application/json';
+    }
+
+    let response;
+    try {
+        response = await fetch(url, init);
+    } catch (e) {
+        throw new Error('Server je nedostupný, zkuste to prosím znovu');
+    }
+
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+        throw new Error(formatApiError(body, `Chyba serveru (${response.status})`));
+    }
+    return body;
+}
+
 // Modální potvrzovací dialog, nahrazuje nativní confirm()
+// Vrací true (potvrzení), false (zrušení) nebo 'alt' (volitelné prostřední tlačítko)
 function showConfirm(options = {}) {
     const config = typeof options === 'string' ? { message: options } : options;
     const {
@@ -92,6 +150,7 @@ function showConfirm(options = {}) {
         message = '',
         confirmText = 'Potvrdit',
         cancelText = 'Zrušit',
+        altText = null,
         variant = 'primary'
     } = config;
 
@@ -102,6 +161,7 @@ function showConfirm(options = {}) {
         const confirmColors = variant === 'danger'
             ? 'bg-red-600 hover:bg-red-700 focus-visible:ring-red-300'
             : 'bg-blue-600 hover:bg-blue-700 focus-visible:ring-blue-300';
+        const secondaryClass = 'inline-flex items-center px-4 py-2 text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors';
 
         const overlay = document.createElement('div');
         overlay.className = 'modal fixed inset-0 flex items-center justify-center p-4 bg-gray-900/50';
@@ -109,21 +169,25 @@ function showConfirm(options = {}) {
         overlay.setAttribute('aria-modal', 'true');
         overlay.setAttribute('aria-labelledby', titleId);
         overlay.innerHTML = `
-            <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
+            <div class="w-full max-w-xl bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
                 <h2 id="${titleId}" class="text-lg font-semibold text-gray-900 dark:text-white mb-2"></h2>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6"></p>
-                <div class="flex justify-end gap-3">
-                    <button type="button" data-modal-cancel class="inline-flex items-center px-4 py-2 text-sm font-medium bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors"></button>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 whitespace-pre-line"></p>
+                <div class="flex flex-wrap justify-end gap-3">
+                    <button type="button" data-modal-cancel class="${secondaryClass}"></button>
+                    ${altText ? `<button type="button" data-modal-alt class="${secondaryClass}"></button>` : ''}
                     <button type="button" data-modal-confirm class="inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-lg ${confirmColors} focus-visible:outline-none focus-visible:ring-2 transition-colors"></button>
                 </div>
             </div>
         `;
 
         const cancelBtn = overlay.querySelector('[data-modal-cancel]');
+        const altBtn = overlay.querySelector('[data-modal-alt]');
         const confirmBtn = overlay.querySelector('[data-modal-confirm]');
+        const buttons = [...overlay.querySelectorAll('button')];
         overlay.querySelector('h2').textContent = title;
         overlay.querySelector('p').textContent = message;
         cancelBtn.textContent = cancelText;
+        if (altBtn) altBtn.textContent = altText;
         confirmBtn.textContent = confirmText;
 
         function close(result) {
@@ -144,17 +208,15 @@ function showConfirm(options = {}) {
             }
             // Udržení focusu uvnitř dialogu
             if (e.key === 'Tab') {
-                const target = e.shiftKey
-                    ? (document.activeElement === cancelBtn ? confirmBtn : null)
-                    : (document.activeElement === confirmBtn ? cancelBtn : null);
-                if (target) {
-                    e.preventDefault();
-                    target.focus();
-                }
+                e.preventDefault();
+                const index = buttons.indexOf(document.activeElement);
+                const posun = e.shiftKey ? -1 : 1;
+                buttons[(index + posun + buttons.length) % buttons.length].focus();
             }
         }
 
         cancelBtn.addEventListener('click', () => close(false));
+        if (altBtn) altBtn.addEventListener('click', () => close('alt'));
         confirmBtn.addEventListener('click', () => close(true));
         overlay.addEventListener('click', e => {
             if (e.target === overlay) close(false);
@@ -167,105 +229,75 @@ function showConfirm(options = {}) {
     });
 }
 
-// Utility funkce
-function formatDate(date) {
-    return new Date(date).toLocaleDateString('cs-CZ');
+// Zablokuje tlačítko během požadavku, vrací funkci pro obnovení původního stavu
+function zamknoutTlacitko(button, text) {
+    const puvodni = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = `<span class="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></span>${escapeHtml(text)}`;
+    return () => {
+        button.disabled = false;
+        button.innerHTML = puvodni;
+    };
 }
 
-function formatNumber(number, decimals = 2) {
-    return parseFloat(number).toFixed(decimals);
-}
+// Uložení odečtu z formuláře evidence nebo editace
+// Před uložením se ověří návaznost na okolní ruční odečty; pokles stavu nabídne uložit jako výměnu měřiče
+async function ulozitOdecet(form, { url, method, recordId = null, zprava }) {
+    if (form.dataset.ukladam) return;
+    form.dataset.ukladam = '1';
+    const odemknoutTlacitko = zamknoutTlacitko(form.querySelector('button[type="submit"]'), 'Ukládám...');
+    const odemknout = () => {
+        odemknoutTlacitko();
+        delete form.dataset.ukladam;
+    };
 
-// Loading states
-function setLoading(element, loading = true) {
-    if (loading) {
-        element.classList.add('loading');
-        element.disabled = true;
-    } else {
-        element.classList.remove('loading');
-        element.disabled = false;
-    }
-}
+    try {
+        const data = { datum: form.elements.datum.value };
+        form.querySelectorAll('[data-meter]').forEach(input => {
+            data[input.dataset.meter] = input.value === '' ? null : Number(input.value);
+        });
+        form.querySelectorAll('[data-vymena]').forEach(checkbox => {
+            data[`vymena_${checkbox.dataset.vymena}`] = checkbox.checked;
+        });
+        if (form.elements.source) data.source = form.elements.source.checked;
 
-// Form validation
-function validateForm(form) {
-    const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
-    let isValid = true;
-    
-    inputs.forEach(input => {
-        if (!input.value.trim()) {
-            input.classList.add('input-error');
-            isValid = false;
-        } else {
-            input.classList.remove('input-error');
-        }
-    });
-    
-    return isValid;
-}
-
-// Keyboard shortcuts
-document.addEventListener('keydown', function(e) {
-    // Ctrl+S pro uložení formuláře
-    if (e.ctrlKey && e.key === 's') {
-        e.preventDefault();
-        const form = document.querySelector('form');
-        if (form) {
-            form.dispatchEvent(new Event('submit'));
-        }
-    }
-});
-
-// Respektování prefers-reduced-motion
-if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    // Zrušení všech animací
-    const style = document.createElement('style');
-    style.textContent = `
-        *, *::before, *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-// Inicializace aplikace
-document.addEventListener('DOMContentLoaded', function() {
-    // Nastavení focus na první interaktivní element
-    const firstInteractive = document.querySelector('input, button, select, textarea, [tabindex]:not([tabindex="-1"])');
-    if (firstInteractive) {
-        firstInteractive.focus();
-    }
-    
-    // Inicializace všech formulářů
-    const forms = document.querySelectorAll('form');
-    forms.forEach(form => {
-        form.addEventListener('submit', function(e) {
-            if (!validateForm(this)) {
-                e.preventDefault();
-                showToast('Prosím vyplňte všechna povinná pole', 'error');
+        const kontrola = await apiFetch('/api/spotreba/kontrola', { method: 'POST', json: { ...data, id: recordId } });
+        if (kontrola.varovani.length) {
+            const pokles = kontrola.varovani.filter(v => v.typ === 'nizsi_nez_predchozi');
+            const volba = await showConfirm({
+                title: 'Zkontrolujte odečet',
+                message: kontrola.varovani.map(v => `• ${v.zprava}`).join('\n')
+                    + (pokles.length ? '\n\nPokud byl měřič vyměněn, uložte odečet jako výměnu – rozdíl se pak nezapočítá jako spotřeba.' : ''),
+                cancelText: 'Zpět k úpravě',
+                altText: pokles.length ? 'Uložit přesto' : null,
+                confirmText: pokles.length ? 'Uložit jako výměnu měřiče' : 'Uložit přesto'
+            });
+            if (volba === false) {
+                odemknout();
+                return;
             }
-        });
-    });
-    
-    // Inicializace tooltipů a popoverů
-    const tooltips = document.querySelectorAll('[data-tooltip]');
-    tooltips.forEach(tooltip => {
-        tooltip.addEventListener('mouseenter', function() {
-            // Implementace tooltipu
-        });
-    });
-});
+            if (volba === true) {
+                pokles.forEach(v => { data[`vymena_${v.meric}`] = true; });
+            }
+        }
 
-// Export pro použití v jiných souborech
-window.App = {
-    showToast,
-    closeToast,
-    showConfirm,
-    formatDate,
-    formatNumber,
-    setLoading,
-    validateForm,
-    escapeHtml
-};
+        const vysledek = await apiFetch(url, { method, json: data });
+        flashToast(vysledek.prepocteno_odhadu
+            ? `${zprava}. Přepočítané odhady: ${vysledek.prepocteno_odhadu}.`
+            : zprava);
+        window.location.href = '/';
+    } catch (error) {
+        showToast(error.message, 'error');
+        odemknout();
+    }
+}
+
+// Ctrl+S / Cmd+S odešle formulář stejně jako tlačítko, včetně kontroly povinných polí
+document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        const form = document.querySelector('form[data-save-shortcut]');
+        if (!form) return;
+        e.preventDefault();
+        form.requestSubmit();
+    }
+});

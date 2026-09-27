@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ app_title }}{% endblock %}</title>
-    
+    <title>{% block title %}{{ APP_TITLE }}{% endblock %}</title>
+
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
@@ -16,9 +15,8 @@
             document.documentElement.classList.add('dark');
         }
     </script>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.8/dist/cdn.min.js"></script>
-    
+    <link rel="stylesheet" href="/static/css/style.css?v={{ APP_VERSION }}">
+
     {% block head %}{% endblock %}
 </head>
 <body class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
@@ -26,7 +24,14 @@
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-lg z-50">
         Přejít na obsah
     </a>
-    
+
+    {% set navigace = [
+        ('/', 'Přehled', ['M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z', 'M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z']),
+        ('/evidovat', 'Evidovat', ['M12 6v6m0 0v6m0-6h6m-6 0H6']),
+        ('/grafy', 'Grafy', ['M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z']),
+        ('/missing-data', 'Chybějící data', ['M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z']),
+    ] %}
+
     <div class="w-full">
         <div class="min-h-screen">
             <div class="px-4 sm:px-6 lg:px-12 xl:px-20 2xl:px-[200px] py-8">
@@ -35,46 +40,27 @@
                     <!-- Hlavní nadpis -->
                     <div>
                         <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            <a href="/" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{{ app_title }}</a>
+                            <a href="/" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{{ APP_TITLE }}</a>
                         </h1>
-                        <p class="text-gray-600 dark:text-gray-400">Sledování spotřeby energií (elektřina, plyn, voda)</p>
+                        <p class="text-gray-600 dark:text-gray-400">Sledování spotřeby energií (elektřina, plyn, voda) a výroby FVE</p>
                     </div>
-                    
+
                     <!-- Navigace + dark mode toggle -->
                     <div class="flex items-center gap-4">
                         <nav aria-label="Hlavní navigace">
                             <div class="flex flex-wrap gap-4">
-                            <a href="/" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/' %}bg-blue-600 text-white{% else %}bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600{% endif %}" aria-current="{% if request.url.path == '/' %}page{% endif %}">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"/>
-                                </svg>
-                                Přehled
-                            </a>
-                            
-                            <a href="/evidovat" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/evidovat' %}bg-blue-600 text-white{% else %}bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600{% endif %}" aria-current="{% if request.url.path == '/evidovat' %}page{% endif %}">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                </svg>
-                                Evidovat
-                            </a>
-                            
-                            <a href="/grafy" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/grafy' %}bg-blue-600 text-white{% else %}bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600{% endif %}" aria-current="{% if request.url.path == '/grafy' %}page{% endif %}">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                                </svg>
-                                Grafy
-                            </a>
-                            
-                            <a href="/missing-data" class="btn btn-md inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if request.url.path == '/missing-data' %}bg-blue-600 text-white{% else %}bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600{% endif %}" aria-current="{% if request.url.path == '/missing-data' %}page{% endif %}">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                Chybějící data
-                            </a>
+                            {% for cesta, nazev, ikona in navigace %}
+                                {% set aktivni = request.url.path == cesta %}
+                                <a href="{{ cesta }}" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if aktivni %}bg-blue-600 text-white{% else %}bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600{% endif %}"{% if aktivni %} aria-current="page"{% endif %}>
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        {% for d in ikona %}<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ d }}"/>{% endfor %}
+                                    </svg>
+                                    {{ nazev }}
+                                </a>
+                            {% endfor %}
                             </div>
                         </nav>
-                        
+
                         <!-- Dark mode toggle -->
                         <button id="dark-mode-toggle" type="button" class="p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors" aria-label="Přepnout tmavý/světlý režim">
                             <svg class="w-5 h-5 text-gray-700 dark:text-gray-300 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,45 +72,33 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Hlavní obsah -->
                 <main id="main-content">
                     {% block content %}{% endblock %}
                 </main>
-                
+
                 <!-- Patička s verzí -->
                 <footer class="mt-12 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <p class="text-center text-xs text-gray-400 dark:text-gray-500">
-                        Verze <span id="app-version">…</span>
+                        Verze {{ APP_VERSION }}
                     </p>
                 </footer>
             </div>
         </div>
     </div>
-    
+
     <!-- Toast notifikace -->
-    <div id="toast-container" class="fixed top-4 right-4 z-60 space-y-2" aria-live="polite"></div>
-    
+    <div id="toast-container" class="fixed top-4 right-4 z-[60] space-y-2" aria-live="polite"></div>
+
     <!-- JavaScript -->
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/app.js?v={{ APP_VERSION }}"></script>
     <script>
         document.getElementById('dark-mode-toggle').addEventListener('click', function() {
             const isDark = document.documentElement.classList.toggle('dark');
             localStorage.setItem('darkMode', isDark);
             window.dispatchEvent(new CustomEvent('darkmodechange', { detail: { dark: isDark } }));
         });
-
-        fetch('/static/version.json', { cache: 'no-store' })
-            .then(r => r.ok ? r.json() : null)
-            .then(data => {
-                const el = document.getElementById('app-version');
-                if (el && data && data.version) el.textContent = data.version;
-                else if (el) el.textContent = 'n/a';
-            })
-            .catch(() => {
-                const el = document.getElementById('app-version');
-                if (el) el.textContent = 'n/a';
-            });
     </script>
     {% block scripts %}{% endblock %}
 </body>

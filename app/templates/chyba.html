@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}{{ APP_TITLE }} - {{ nadpis }}{% endblock %}
+
+{% block content %}
+<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 text-center">
+    <p class="text-5xl font-bold text-gray-300 dark:text-gray-600 mb-4">{{ status }}</p>
+    <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{ nadpis }}</h2>
+    <p class="text-gray-600 dark:text-gray-400 mb-6">{{ zprava }}</p>
+    <a href="/" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors">
+        Zpět na přehled
+    </a>
+</section>
+{% endblock %}

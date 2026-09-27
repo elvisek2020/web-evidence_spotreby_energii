@@ -3,8 +3,7 @@ import sys
 import logging
 from urllib.parse import quote_plus
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +37,13 @@ engine = create_engine(
     connect_args={"connect_timeout": 10},
 )
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Bez autoflush: služby, které po změně hned čtou data (přepočet odhadů), volají flush samy
+SessionLocal = sessionmaker(autoflush=False, bind=engine)
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
+
 
 def get_db():
     """Dependency pro získání databázové session"""

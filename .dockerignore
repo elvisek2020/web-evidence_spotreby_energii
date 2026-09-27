@@ -1,0 +1,19 @@
+# Do image patří jen app/ a requirements.txt; hlavně žádné tajné údaje
+.env
+.env.*
+.git
+.github
+_docs
+_backup
+images
+tests
+scripts
+*.md
+docker-compose*.yml
+pytest.ini
+requirements-dev.txt
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.venv
+.DS_Store

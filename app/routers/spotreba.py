@@ -1,181 +1,215 @@
+import csv
+import io
 import logging
-
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.params import Query
-from sqlalchemy.orm import Session
-from sqlalchemy import desc, and_
+from datetime import date
 from typing import List, Optional
-from datetime import date, timedelta
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
+from sqlalchemy import and_
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import Session
+
 from ..database import get_db
+from ..formatovani import cislo_cz, cislo_input, datum_kratke
+from ..meters import METERS
 from ..models import Spotreba
-from ..schemas import SpotrebaCreate, SpotrebaUpdate, SpotrebaResponse, SpotrebaWithDiff
+from ..schemas import (
+    KontrolaVarovani,
+    KontrolaVstup,
+    KontrolaVysledek,
+    SpotrebaCreate,
+    SpotrebaResponse,
+    SpotrebaUlozeno,
+    SpotrebaUpdate,
+    SpotrebaWithDiff,
+)
+from ..services import vypocty
+from ..services.zaznamy import nacti_vse, prepocitej_okoli
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+_DUPLICITNI_DATUM = "Záznam pro toto datum již existuje"
+
+
+def _s_rozdily(radek: vypocty.Radek) -> SpotrebaWithDiff:
+    data = SpotrebaResponse.model_validate(radek.zaznam).model_dump()
+    data["fve"] = radek.zaznam.fve or 0
+    data.update({f"diff_{key}": stav.rozdil for key, stav in radek.merice.items()})
+    return SpotrebaWithDiff(**data)
+
+
+def _potvrdit(db: Session, dotcena_data: Optional[set[date]], popis: str) -> int:
+    """Přepočítá odhady kolem změněných ručních odečtů a potvrdí transakci
+
+    Vrací počet přepočtených odhadů.
+    """
+    try:
+        prepocteno = prepocitej_okoli(db, dotcena_data) if dotcena_data else 0
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=_DUPLICITNI_DATUM)
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("Chyba při ukládání: %s", popis)
+        raise HTTPException(status_code=500, detail="Chyba při ukládání do databáze")
+    return prepocteno
+
+
 @router.get("/spotreba", response_model=List[SpotrebaWithDiff])
-async def get_spotreba_list(
+def get_spotreba_list(
     db: Session = Depends(get_db),
     limit: int = Query(12, ge=1, le=100),
     offset: int = Query(0, ge=0, description="Počet záznamů k přeskočení pro stránkování"),
     source_filter: Optional[bool] = Query(None, description="Filtr podle zdroje dat: None=all, False=manuální, True=automatické")
 ):
-    """Získání seznamu záznamů spotřeby s vypočítanými rozdíly"""
-    
-    # Základní dotaz
-    query = db.query(Spotreba)
-    
-    # Aplikace filtru podle zdroje dat
-    if source_filter is not None:
-        query = query.filter(Spotreba.source == source_filter)
-    
-    # Seřazení podle data (nejnovější první) a omezení počtu s offsetem
-    spotreba_records = query.order_by(desc(Spotreba.datum)).offset(offset).limit(limit).all()
-    
-    # Převod na response model s vypočítanými rozdíly
-    result = []
-    for i, record in enumerate(spotreba_records):
-        record_dict = {
-            "id": record.id,
-            "datum": record.datum,
-            "elektromer_vysoky": record.elektromer_vysoky,
-            "elektromer_nizky": record.elektromer_nizky,
-            "plynomer": record.plynomer,
-            "vodomer": record.vodomer,
-            "fve": record.fve or 0,
-            "source": record.source,
-            "vymena_elektromer_vysoky": record.vymena_elektromer_vysoky,
-            "vymena_elektromer_nizky": record.vymena_elektromer_nizky,
-            "vymena_plynomer": record.vymena_plynomer,
-            "vymena_vodomer": record.vymena_vodomer,
-            "vymena_fve": record.vymena_fve,
-            "diff_elektromer_vysoky": None,
-            "diff_elektromer_nizky": None,
-            "diff_plynomer": None,
-            "diff_vodomer": None,
-            "diff_fve": None,
-        }
-        
-        # Výpočet rozdílů s předchozím záznamem, u vyměněného měřiče rozdíl nedává smysl
-        if i < len(spotreba_records) - 1:
-            prev_record = spotreba_records[i + 1]
-            if not record.vymena_elektromer_vysoky:
-                record_dict["diff_elektromer_vysoky"] = record.elektromer_vysoky - prev_record.elektromer_vysoky
-            if not record.vymena_elektromer_nizky:
-                record_dict["diff_elektromer_nizky"] = record.elektromer_nizky - prev_record.elektromer_nizky
-            if not record.vymena_plynomer:
-                record_dict["diff_plynomer"] = record.plynomer - prev_record.plynomer
-            if not record.vymena_vodomer:
-                record_dict["diff_vodomer"] = record.vodomer - prev_record.vodomer
-            # Nulové počítadlo FVE znamená neevidováno, rozdíl proti němu nedává smysl
-            if record.fve and prev_record.fve and not record.vymena_fve:
-                record_dict["diff_fve"] = record.fve - prev_record.fve
-        
-        result.append(SpotrebaWithDiff(**record_dict))
-    
-    return result
+    """Seznam záznamů s rozdílem oproti předchozímu záznamu, nejnovější první
+
+    Rozdíly se počítají přes celou historii, takže je má i poslední záznam stránky.
+    """
+    radky = vypocty.radky_s_rozdily(nacti_vse(db), source_filter)
+    return [_s_rozdily(radek) for radek in radky[offset:offset + limit]]
+
 
 @router.get("/spotreba/count")
-async def get_spotreba_count(
+def get_spotreba_count(
     db: Session = Depends(get_db),
     source_filter: Optional[bool] = Query(None, description="Filtr podle zdroje dat: None=all, False=manuální, True=automatické")
 ):
     """Získání celkového počtu záznamů spotřeby"""
-    
-    # Základní dotaz
     query = db.query(Spotreba)
-    
-    # Aplikace filtru podle zdroje dat
     if source_filter is not None:
         query = query.filter(Spotreba.source == source_filter)
-    
-    # Počet záznamů
-    count = query.count()
-    
-    return {"count": count}
+    return {"count": query.count()}
+
+
+def _csv_cislo(hodnota: Optional[float]) -> str:
+    return "" if hodnota is None else cislo_input(hodnota).replace(".", ",")
+
+
+@router.get("/spotreba/export.csv")
+def export_csv(db: Session = Depends(get_db)):
+    """Všechny záznamy jako CSV pro Excel (středník, desetinná čárka, UTF-8 s BOM)"""
+    vystup = io.StringIO()
+    writer = csv.writer(vystup, delimiter=";", lineterminator="\r\n")
+    writer.writerow([
+        "Datum",
+        *(f"{meter.label} ({meter.jednotka})" for meter in METERS),
+        "Zdroj",
+        *(f"Výměna – {meter.label}" for meter in METERS),
+    ])
+    for zaznam in nacti_vse(db):
+        writer.writerow([
+            zaznam.datum.strftime("%d.%m.%Y"),
+            *(_csv_cislo(getattr(zaznam, meter.key)) for meter in METERS),
+            "odhad" if zaznam.source else "odečet",
+            *("ano" if getattr(zaznam, meter.flag) else "" for meter in METERS),
+        ])
+    return Response(
+        content="﻿" + vystup.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="spotreba-{date.today().isoformat()}.csv"'},
+    )
+
+
+def _varovani(varovani: vypocty.Varovani) -> KontrolaVarovani:
+    meter, jednotka = varovani.meter, varovani.meter.jednotka
+    soused = "předchozí" if varovani.typ == "nizsi_nez_predchozi" else "následující"
+    porovnani = "méně" if varovani.typ == "nizsi_nez_predchozi" else "více"
+    zprava = (
+        f"{meter.label}: {cislo_cz(varovani.hodnota)} {jednotka} je {porovnani} než {soused} odečet "
+        f"{cislo_cz(varovani.soused_hodnota)} {jednotka} ze dne {datum_kratke(varovani.soused_datum)}"
+    )
+    return KontrolaVarovani(
+        meric=meter.key,
+        label=meter.label,
+        jednotka=jednotka,
+        typ=varovani.typ,
+        hodnota=varovani.hodnota,
+        soused_datum=varovani.soused_datum,
+        soused_hodnota=varovani.soused_hodnota,
+        zprava=zprava,
+    )
+
+
+@router.post("/spotreba/kontrola", response_model=KontrolaVysledek)
+def kontrola_navaznosti(vstup: KontrolaVstup, db: Session = Depends(get_db)):
+    """Varování, když odečet nenavazuje na okolní ruční odečty; nic neukládá"""
+    varovani = vypocty.kontrola_navaznosti(nacti_vse(db), vstup, exclude_id=vstup.id)
+    return KontrolaVysledek(varovani=[_varovani(polozka) for polozka in varovani])
+
 
 @router.get("/spotreba/{spotreba_id}", response_model=SpotrebaResponse)
-async def get_spotreba(spotreba_id: int, db: Session = Depends(get_db)):
+def get_spotreba(spotreba_id: int, db: Session = Depends(get_db)):
     """Získání konkrétního záznamu spotřeby"""
-    spotreba = db.query(Spotreba).filter(Spotreba.id == spotreba_id).first()
+    spotreba = db.get(Spotreba, spotreba_id)
     if not spotreba:
         raise HTTPException(status_code=404, detail="Záznam spotřeby nebyl nalezen")
     return spotreba
 
-@router.post("/spotreba", response_model=SpotrebaResponse)
-async def create_spotreba(spotreba: SpotrebaCreate, db: Session = Depends(get_db)):
-    """Vytvoření nového záznamu spotřeby"""
-    
-    # Kontrola, zda už existuje záznam pro dané datum
-    existing = db.query(Spotreba).filter(Spotreba.datum == spotreba.datum).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Záznam pro toto datum již existuje")
-    
-    db_spotreba = Spotreba(**spotreba.dict())
-    db.add(db_spotreba)
-    try:
-        db.commit()
-        db.refresh(db_spotreba)
-    except Exception:
-        db.rollback()
-        logger.exception("Chyba při vytváření záznamu")
-        raise HTTPException(status_code=500, detail="Chyba při ukládání do databáze")
-    
-    logger.info("Vytvořen záznam id=%s, datum=%s", db_spotreba.id, db_spotreba.datum)
-    return db_spotreba
 
-@router.put("/spotreba/{spotreba_id}", response_model=SpotrebaResponse)
-async def update_spotreba(
-    spotreba_id: int, 
-    spotreba_update: SpotrebaUpdate, 
+@router.post("/spotreba", response_model=SpotrebaUlozeno)
+def create_spotreba(spotreba: SpotrebaCreate, db: Session = Depends(get_db)):
+    """Vytvoření nového záznamu; u ručního odečtu se přepočítají okolní odhady"""
+    if db.query(Spotreba).filter(Spotreba.datum == spotreba.datum).first():
+        raise HTTPException(status_code=400, detail=_DUPLICITNI_DATUM)
+
+    db_spotreba = Spotreba(**spotreba.model_dump())
+    db.add(db_spotreba)
+    dotcena = None if db_spotreba.source else {db_spotreba.datum}
+    prepocteno = _potvrdit(db, dotcena, "vytvoření záznamu")
+    db.refresh(db_spotreba)
+
+    logger.info("Vytvořen záznam id=%s, datum=%s, přepočteno odhadů %d", db_spotreba.id, db_spotreba.datum, prepocteno)
+    return SpotrebaUlozeno(**SpotrebaResponse.model_validate(db_spotreba).model_dump(), prepocteno_odhadu=prepocteno)
+
+
+@router.put("/spotreba/{spotreba_id}", response_model=SpotrebaUlozeno)
+def update_spotreba(
+    spotreba_id: int,
+    spotreba_update: SpotrebaUpdate,
     db: Session = Depends(get_db)
 ):
-    """Aktualizace záznamu spotřeby"""
-    
-    # Najít existující záznam
-    db_spotreba = db.query(Spotreba).filter(Spotreba.id == spotreba_id).first()
+    """Aktualizace záznamu; změna ručního odečtu přepočítá okolní odhady"""
+    db_spotreba = db.get(Spotreba, spotreba_id)
     if not db_spotreba:
         raise HTTPException(status_code=404, detail="Záznam spotřeby nebyl nalezen")
-    
-    # Kontrola, zda nové datum nekonfliktuje s existujícím záznamem
-    if spotreba_update.datum and spotreba_update.datum != db_spotreba.datum:
+
+    update_data = spotreba_update.model_dump(exclude_unset=True)
+    novy_datum = update_data.get("datum")
+    if novy_datum and novy_datum != db_spotreba.datum:
         existing = db.query(Spotreba).filter(
-            and_(Spotreba.datum == spotreba_update.datum, Spotreba.id != spotreba_id)
+            and_(Spotreba.datum == novy_datum, Spotreba.id != spotreba_id)
         ).first()
         if existing:
-            raise HTTPException(status_code=400, detail="Záznam pro toto datum již existuje")
-    
-    update_data = spotreba_update.dict(exclude_unset=True)
+            raise HTTPException(status_code=400, detail=_DUPLICITNI_DATUM)
+
+    puvodni_datum, puvodni_source = db_spotreba.datum, db_spotreba.source
     for field, value in update_data.items():
         setattr(db_spotreba, field, value)
-    
-    try:
-        db.commit()
-        db.refresh(db_spotreba)
-    except Exception:
-        db.rollback()
-        logger.exception("Chyba při aktualizaci záznamu id=%s", spotreba_id)
-        raise HTTPException(status_code=500, detail="Chyba při ukládání do databáze")
-    
-    logger.info("Aktualizován záznam id=%s", spotreba_id)
-    return db_spotreba
+
+    # Úprava samotného odhadu okolí nemění, změna ručního odečtu i převod mezi odečtem a odhadem ano
+    dotcena = None if puvodni_source and db_spotreba.source else {puvodni_datum, db_spotreba.datum}
+    prepocteno = _potvrdit(db, dotcena, f"aktualizace záznamu id={spotreba_id}")
+    db.refresh(db_spotreba)
+
+    logger.info("Aktualizován záznam id=%s, přepočteno odhadů %d", spotreba_id, prepocteno)
+    return SpotrebaUlozeno(**SpotrebaResponse.model_validate(db_spotreba).model_dump(), prepocteno_odhadu=prepocteno)
+
 
 @router.delete("/spotreba/{spotreba_id}")
-async def delete_spotreba(spotreba_id: int, db: Session = Depends(get_db)):
-    """Smazání záznamu spotřeby"""
-    
-    db_spotreba = db.query(Spotreba).filter(Spotreba.id == spotreba_id).first()
+def delete_spotreba(spotreba_id: int, db: Session = Depends(get_db)):
+    """Smazání záznamu; po smazání ručního odečtu se přepočítají okolní odhady"""
+    db_spotreba = db.get(Spotreba, spotreba_id)
     if not db_spotreba:
         raise HTTPException(status_code=404, detail="Záznam spotřeby nebyl nalezen")
-    
+
+    dotcena = None if db_spotreba.source else {db_spotreba.datum}
     db.delete(db_spotreba)
-    try:
-        db.commit()
-    except Exception:
-        db.rollback()
-        logger.exception("Chyba při mazání záznamu id=%s", spotreba_id)
-        raise HTTPException(status_code=500, detail="Chyba při mazání z databáze")
-    
-    logger.info("Smazán záznam id=%s", spotreba_id)
-    return {"message": "Záznam byl úspěšně smazán"}
+    prepocteno = _potvrdit(db, dotcena, f"smazání záznamu id={spotreba_id}")
+
+    logger.info("Smazán záznam id=%s, přepočteno odhadů %d", spotreba_id, prepocteno)
+    return {"message": "Záznam byl úspěšně smazán", "prepocteno_odhadu": prepocteno}

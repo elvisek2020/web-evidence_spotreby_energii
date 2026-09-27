@@ -1,182 +1,127 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
-from typing import List, Optional
-from datetime import date
+
 from ..database import get_db
-from ..models import Spotreba
-from ..schemas import MissingDataSuggestion
+from ..formatovani import tvar
+from ..schemas import (
+    MissingDataSuggestion,
+    NavrhVstup,
+    PrepocetKonflikt,
+    PrepocetNahled,
+    PrepocetZmena,
+    SpotrebaResponse,
+)
+from ..services import vypocty
+from ..services.zaznamy import aplikuj_zmeny, nacti_vse, najdi_navrh, zaznam_z_navrhu
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-def _missing_months(start: date, end: date) -> list[tuple[int, int]]:
-    """Kalendářní měsíce mezi dvěma odečty, které nemají vlastní záznam"""
-    months = []
-    year, month = start.year, start.month + 1
-    if month > 12:
-        year, month = year + 1, 1
 
-    while (year, month) < (end.year, end.month):
-        months.append((year, month))
-        month += 1
-        if month > 12:
-            year, month = year + 1, 1
+def _commit(db: Session, popis: str) -> None:
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Záznam pro toto datum již existuje")
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("Chyba při ukládání: %s", popis)
+        raise HTTPException(status_code=500, detail="Chyba při ukládání do databáze")
 
-    return months
 
-def _interpolate(start_value: float, end_value: float, ratio: float) -> float:
-    """Lineární dopočet hodnoty mezi dvěma odečty"""
-    return round(start_value + (end_value - start_value) * ratio, 2)
+@router.get("/missing-data/suggestions", response_model=list[MissingDataSuggestion])
+def get_missing_data_suggestions(db: Session = Depends(get_db)):
+    """Návrhy záznamů pro kalendářní měsíce bez odečtu, nejnovější první"""
+    navrhy, _ = vypocty.navrhy_chybejicich(nacti_vse(db))
+    return [MissingDataSuggestion(datum=navrh.datum, **navrh.hodnoty) for navrh in navrhy]
 
-def _has_meter_replacement(record: Spotreba) -> bool:
-    """Byl u odečtu nasazen nový měřič?"""
-    return any((
-        record.vymena_elektromer_vysoky,
-        record.vymena_elektromer_nizky,
-        record.vymena_plynomer,
-        record.vymena_vodomer,
-        record.vymena_fve,
-    ))
-
-def _interpolate_fve(start_value: Optional[float], end_value: Optional[float], ratio: float) -> float:
-    """Dopočet stavu počítadla FVE
-
-    Nula znamená chybějící údaj (záznamy před zavedením sloupce fve), z takové
-    dvojice by interpolace vyrobila nesmyslný stav.
-    """
-    if not start_value or not end_value:
-        return 0.0
-    return _interpolate(start_value, end_value, ratio)
-
-@router.get("/missing-data/suggestions", response_model=List[MissingDataSuggestion])
-async def get_missing_data_suggestions(db: Session = Depends(get_db)):
-    """Získání návrhů pro doplnění chybějících dat"""
-    
-    records = db.query(Spotreba).order_by(Spotreba.datum).all()
-    
-    if len(records) < 2:
-        return []
-    
-    existing_dates = {record.datum for record in records}
-    suggestions = []
-    
-    # Analýza mezer mezi sousedními odečty
-    for current_record, next_record in zip(records, records[1:]):
-        missing_months = _missing_months(current_record.datum, next_record.datum)
-        if not missing_months:
-            continue
-        
-        # Přes výměnu měřiče nelze interpolovat, stavy na sebe nenavazují
-        if _has_meter_replacement(next_record):
-            logger.info(
-                "Mezera %s - %s přeskočena kvůli výměně měřiče",
-                current_record.datum, next_record.datum,
-            )
-            continue
-        
-        gap_days = (next_record.datum - current_record.datum).days
-        
-        # Návrhy se zakládají vždy k prvnímu dni chybějícího měsíce
-        for year, month in missing_months:
-            suggested_date = date(year, month, 1)
-            if suggested_date in existing_dates:
-                continue
-            
-            # Váha podle skutečné pozice data v mezeře, ne podle pořadí měsíce
-            ratio = (suggested_date - current_record.datum).days / gap_days
-            
-            suggestions.append(MissingDataSuggestion(
-                datum=suggested_date,
-                elektromer_vysoky=_interpolate(current_record.elektromer_vysoky, next_record.elektromer_vysoky, ratio),
-                elektromer_nizky=_interpolate(current_record.elektromer_nizky, next_record.elektromer_nizky, ratio),
-                plynomer=_interpolate(current_record.plynomer, next_record.plynomer, ratio),
-                vodomer=_interpolate(current_record.vodomer, next_record.vodomer, ratio),
-                fve=_interpolate_fve(current_record.fve, next_record.fve, ratio),
-                source=True
-            ))
-    
-    suggestions.sort(key=lambda suggestion: suggestion.datum, reverse=True)
-    
-    return suggestions
 
 @router.post("/missing-data/create")
-async def create_missing_data_suggestions(db: Session = Depends(get_db)):
-    """Automatické vytvoření všech navržených chybějících záznamů"""
-    
-    suggestions = await get_missing_data_suggestions(db=db)
-    
-    if not suggestions:
+def create_missing_data_suggestions(db: Session = Depends(get_db)):
+    """Vytvoření všech aktuálních návrhů chybějících záznamů"""
+    navrhy, _ = vypocty.navrhy_chybejicich(nacti_vse(db))
+    if not navrhy:
         return {"message": "Žádné chybějící záznamy k doplnění", "created": 0}
-    
-    created_count = 0
-    
-    for suggestion in suggestions:
-        # Kontrola, zda už neexistuje záznam pro toto datum
-        existing = db.query(Spotreba).filter(Spotreba.datum == suggestion.datum).first()
-        if not existing:
-            # Vytvoření nového záznamu
-            new_record = Spotreba(
-                datum=suggestion.datum,
-                elektromer_vysoky=suggestion.elektromer_vysoky,
-                elektromer_nizky=suggestion.elektromer_nizky,
-                plynomer=suggestion.plynomer,
-                vodomer=suggestion.vodomer,
-                fve=suggestion.fve,
-                source=True
-            )
-            db.add(new_record)
-            created_count += 1
-    
-    try:
-        db.commit()
-    except Exception:
-        db.rollback()
-        logger.exception("Chyba při hromadném vytváření chybějících záznamů")
-        raise HTTPException(status_code=500, detail="Chyba při ukládání do databáze")
-    
-    logger.info("Hromadně vytvořeno %d chybějících záznamů", created_count)
-    return {
-        "message": f"Bylo vytvořeno {created_count} chybějících záznamů",
-        "created": created_count
-    }
+
+    for navrh in navrhy:
+        db.add(zaznam_z_navrhu(navrh))
+    _commit(db, "hromadné vytvoření chybějících záznamů")
+
+    pocet = len(navrhy)
+    logger.info("Hromadně vytvořeno %d chybějících záznamů", pocet)
+    zprava = tvar(
+        pocet,
+        f"Byl vytvořen {pocet} chybějící záznam",
+        f"Byly vytvořeny {pocet} chybějící záznamy",
+        f"Bylo vytvořeno {pocet} chybějících záznamů",
+    )
+    return {"message": zprava, "created": pocet}
+
 
 @router.post("/missing-data/create-single")
-async def create_single_missing_data(
-    suggestion: MissingDataSuggestion,
-    db: Session = Depends(get_db)
-):
-    """Vytvoření jednoho konkrétního chybějícího záznamu"""
-    
-    # Kontrola, zda už neexistuje záznam pro toto datum
-    existing = db.query(Spotreba).filter(Spotreba.datum == suggestion.datum).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Záznam pro toto datum již existuje")
-    
-    # Vytvoření nového záznamu
-    new_record = Spotreba(
-        datum=suggestion.datum,
-        elektromer_vysoky=suggestion.elektromer_vysoky,
-        elektromer_nizky=suggestion.elektromer_nizky,
-        plynomer=suggestion.plynomer,
-        vodomer=suggestion.vodomer,
-        fve=suggestion.fve,
-        source=True
-    )
-    
-    db.add(new_record)
-    try:
-        db.commit()
-        db.refresh(new_record)
-    except Exception:
-        db.rollback()
-        logger.exception("Chyba při vytváření chybějícího záznamu pro datum=%s", suggestion.datum)
-        raise HTTPException(status_code=500, detail="Chyba při ukládání do databáze")
-    
-    logger.info("Vytvořen chybějící záznam id=%s, datum=%s", new_record.id, new_record.datum)
+def create_single_missing_data(vstup: NavrhVstup, db: Session = Depends(get_db)):
+    """Vytvoření jednoho navrženého záznamu
+
+    Hodnoty se počítají z aktuálních dat, ne z toho, co poslal prohlížeč - stránka
+    s návrhy mohla mezitím zastarat.
+    """
+    navrh = najdi_navrh(db, vstup.datum)
+    if navrh is None:
+        raise HTTPException(status_code=400, detail="Pro toto datum už návrh neexistuje, obnovte stránku")
+
+    zaznam = zaznam_z_navrhu(navrh)
+    db.add(zaznam)
+    _commit(db, f"vytvoření chybějícího záznamu pro datum={vstup.datum}")
+    db.refresh(zaznam)
+
+    logger.info("Vytvořen chybějící záznam id=%s, datum=%s", zaznam.id, zaznam.datum)
     return {
         "message": "Záznam byl úspěšně vytvořen",
-        "record": new_record
+        "record": SpotrebaResponse.model_validate(zaznam),
     }
+
+
+@router.get("/missing-data/prepocet", response_model=PrepocetNahled)
+def prepocet_nahled(db: Session = Depends(get_db)):
+    """Náhled odhadů, které neodpovídají okolním ručním odečtům; nic neukládá"""
+    zmeny, konflikty = vypocty.prepocet_odhadu(nacti_vse(db))
+    return PrepocetNahled(
+        zmeny=[
+            PrepocetZmena(
+                id=zmena.zaznam.id,
+                datum=zmena.zaznam.datum,
+                meric=zmena.meter.key,
+                label=zmena.meter.label,
+                stara=zmena.stara,
+                nova=zmena.nova,
+            )
+            for zmena in zmeny
+        ],
+        konflikty=[
+            PrepocetKonflikt(id=konflikt.zaznam.id, datum=konflikt.zaznam.datum, popis=konflikt.popis)
+            for konflikt in konflikty
+        ],
+        pocet_odhadu=len({zmena.zaznam.id for zmena in zmeny}),
+    )
+
+
+@router.post("/missing-data/prepocet")
+def prepocet_provest(db: Session = Depends(get_db)):
+    """Přepočítá všechny uložené odhady podle okolních ručních odečtů"""
+    zmeny, _ = vypocty.prepocet_odhadu(nacti_vse(db))
+    pocet = aplikuj_zmeny(zmeny)
+    _commit(db, "přepočet odhadů")
+
+    logger.info("Přepočteno %d odhadů", pocet)
+    zprava = tvar(
+        pocet,
+        f"Byl přepočten {pocet} odhad",
+        f"Byly přepočteny {pocet} odhady",
+        f"Bylo přepočteno {pocet} odhadů",
+    )
+    return {"message": zprava, "prepocteno": pocet}

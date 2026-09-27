@@ -1,0 +1,67 @@
+{# Opakované části šablon; měřiče se procházejí z METERS (app/meters.py) #}
+
+{% macro pole_merice(meter, hodnota=none, placeholder=none) %}
+<div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-6">
+    <label for="{{ meter.key }}" class="sm:w-64 text-sm font-medium text-gray-700 dark:text-gray-300 sm:text-right">{{ meter.label }} ({{ meter.jednotka }}) *</label>
+    <div class="flex-1">
+        <input
+            type="number"
+            id="{{ meter.key }}"
+            name="{{ meter.key }}"
+            data-meter="{{ meter.key }}"
+            required
+            min="0"
+            max="9999999.99"
+            step="0.01"
+            inputmode="decimal"
+            class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            {% if hodnota is not none %}value="{{ hodnota|cislo_input }}"{% endif %}
+            {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+        >
+    </div>
+</div>
+{% endmacro %}
+
+{% macro bunka_merice(radek, meter) %}
+{% set stav = radek.merice[meter.key] %}
+<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+    <div class="flex flex-col">
+        <span class="dark:text-white">{{ stav.stav|cislo }}</span>
+        {% if stav.vymena %}
+            <span class="text-amber-600 dark:text-amber-400">výměna měřiče</span>
+        {% elif stav.rozdil is not none %}
+            <span class="{% if stav.rozdil >= 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                {% if stav.rozdil >= 0 %}+{% endif %}{{ stav.rozdil|cislo }} {{ meter.jednotka }}
+            </span>
+        {% endif %}
+    </div>
+</td>
+{% endmacro %}
+
+{% macro strankovani(strana, stran, stranky, parametry='') %}
+{% set tlacitko = 'px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white transition-colors' %}
+{% set neaktivni = 'px-3 py-2 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md cursor-not-allowed' %}
+{% if stran > 1 %}
+<nav class="flex flex-wrap items-center gap-2" aria-label="Stránkování">
+    {% if strana > 1 %}
+        <a href="?strana={{ strana - 1 }}{{ parametry }}" class="{{ tlacitko }}">Předchozí</a>
+    {% else %}
+        <span class="{{ neaktivni }}">Předchozí</span>
+    {% endif %}
+    {% for cislo_strany in stranky %}
+        {% if cislo_strany is none %}
+            <span class="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">…</span>
+        {% elif cislo_strany == strana %}
+            <span class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md" aria-current="page">{{ cislo_strany }}</span>
+        {% else %}
+            <a href="?strana={{ cislo_strany }}{{ parametry }}" class="{{ tlacitko }}">{{ cislo_strany }}</a>
+        {% endif %}
+    {% endfor %}
+    {% if strana < stran %}
+        <a href="?strana={{ strana + 1 }}{{ parametry }}" class="{{ tlacitko }}">Další</a>
+    {% else %}
+        <span class="{{ neaktivni }}">Další</span>
+    {% endif %}
+</nav>
+{% endif %}
+{% endmacro %}

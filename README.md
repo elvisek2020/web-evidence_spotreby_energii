@@ -1,35 +1,54 @@
 # Evidování spotřeby energií
 
-Moderní webová aplikace pro sledování a evidenci spotřeby energií (elektřina, plyn, voda). Aplikace umožňuje uživatelům zaznamenávat stav měřičů, zobrazovat historická data v tabulce a grafech, a automaticky doplňovat chybějící záznamy.
+Webová aplikace pro evidenci stavů měřičů energií (elektřina ve vysokém a nízkém tarifu, plyn, voda) a počítadla výroby FVE. Zobrazuje historii v tabulce s rozdíly, měsíční spotřebu a meziroční porovnání v grafech a doplňuje odhady pro měsíce bez odečtu.
+
+Produkce: **https://spotreba.elvisek.cz**
 
 ![Screenshot aplikace](images/screen_spotreba.png)
 
 ## 📋 Popis
 
-Aplikace "Evidování spotřeby energií" je moderní webová aplikace postavená na Python FastAPI frameworku, která slouží pro evidenci a sledování spotřeby energií v domácnosti nebo podniku. Uživatelé mohou zaznamenávat stavy měřičů (elektroměr vysoký/nízký tarif, plynoměr, vodoměr), prohlížet historická data v přehledné tabulce a interaktivních grafech, a automaticky doplňovat chybějící záznamy pomocí inteligentní interpolace.
+Aplikace je postavená na Python FastAPI se serverovým vykreslováním šablon Jinja2 a externí databází MySQL/MariaDB. Uživatel zapisuje ruční odečty měřičů, aplikace z nich počítá spotřebu po měsících a letech, hlídá návaznost odečtů (překlep, výměna měřiče) a pro kalendářní měsíce bez odečtu navrhuje odhady, které udržuje v souladu s okolními odečty.
 
-Aplikace je určena pro všechny, kteří chtějí systematicky sledovat svou spotřebu energií a mít přehled o vývoji spotřeby v čase. Hlavní charakteristiky aplikace zahrnují moderní uživatelské rozhraní s boxovým designem, responzivní layout, bezpečnou práci s databází a automatické doplňování chybějících dat.
+Aplikace je určená pro domácnost, která chce mít přehled o vývoji spotřeby a výroby energie v čase.
 
 ## ✨ Funkce
 
-- ✅ **Evidování spotřeby** - Zaznamenávání stavů měřičů (elektroměr vysoký/nízký tarif, plynoměr, vodoměr) s validací dat
-- ✅ **Přehledná tabulka** - Zobrazení posledních záznamů s výpočtem rozdílů mezi měřeními
-- ✅ **Interaktivní grafy** - Chart.js grafy pro vizualizaci spotřeby v čase s rozlišením zdrojů dat
-- ✅ **Automatické doplnění** - Návrhy pro měsíce bez odečtu, stavy měřičů lineární interpolací podle skutečného odstupu dnů
-- ✅ **CRUD operace** - Kompletní správa záznamů (vytvoření, editace, mazání)
-- ✅ **Výměna měřiče** - Označení v editaci záznamu; skok stavu se pak nepočítá jako spotřeba v tabulce, grafech ani meziročním porovnání
-- ✅ **Filtrování dat** - Checkbox „Zobrazit pouze odečty“ v přehledu skryje automaticky doplněné odhady
+- ✅ **Evidování odečtů** – stavy elektroměru (VT/NT), plynoměru, vodoměru a počítadla FVE s validací; výchozí datum je dnešek, poslední ruční odečet je v polích jen jako nápověda
+- ✅ **Kontrola návaznosti** – když je stav nižší než předchozí ruční odečet (nebo vyšší než následující), aplikace se před uložením zeptá; pokles jde rovnou uložit jako výměnu měřiče
+- ✅ **Přehled** – tabulka s rozdílem oproti předchozímu záznamu (i na konci stránky), stránkování po 15 záznamech, filtr „Zobrazit pouze odečty“, statistiky, upozornění na chybějící odečet v aktuálním měsíci a export do CSV
+- ✅ **Výměna měřiče** – příznak u jednotlivých měřičů; skok stavu se nepočítá jako spotřeba v tabulce, grafech ani meziročním porovnání
+- ✅ **Měsíční spotřeba** – rozpočet do kalendářních měsíců podle dní mezi ručními odečty, dvě osy (kWh a m³), odlišení dopočtených měsíců a upozornění na poklesy stavu bez označené výměny
+- ✅ **Celkové stavy** – průběh stavů měřičů u všech záznamů, odhady jako duté body
+- ✅ **Meziroční porovnání** – spotřeba po kalendářních letech; rozpracovaný rok se srovnává se stejným obdobím loňska, u FVE je vyšší výroba „lepší“
+- ✅ **Chybějící data** – návrhy odhadů pro měsíce bez odečtu, přehled mezer, které automaticky doplnit nejde, a kontrola uložených odhadů s hromadným přepočtem
+- ✅ **Automatický přepočet odhadů** – po přidání, opravě nebo smazání ručního odečtu se odhady v jeho okolí dopočítají znovu
+- ✅ **Tmavý režim a mobil** – přepínač světlého/tmavého režimu, formuláře se na úzké obrazovce skládají pod sebe
 
 ## 📖 Použití
 
-Aplikace poskytuje jednoduché a intuitivní rozhraní pro evidenci spotřeby energií. Po spuštění aplikace můžete začít zaznamenávat stavy měřičů a sledovat vývoj spotřeby v čase.
-
 ### Základní workflow
 
-1. **Přidání záznamu**: Na hlavní stránce klikněte na tlačítko "Přidat záznam" a vyplňte formulář se stavy měřičů a datem měření. Poslední odečet je v polích jen jako placeholder (nápověda), takže se nedá omylem uložit stará hodnota
-2. **Prohlížení dat**: Na hlavní stránce si můžete prohlédnout posledních 12 záznamů v tabulce s automatickým výpočtem rozdílů
-3. **Grafické zobrazení**: Přepněte na záložku "Grafy" pro vizualizaci spotřeby pomocí interaktivních grafů
-4. **Automatické doplnění**: Pokud některý kalendářní měsíc nemá odečet, můžete použít funkci "Chybějící data" pro automatické generování návrhů
+1. **Nový odečet** – v záložce „Evidovat“ vyplňte datum a stavy všech měřičů (FVE neevidujete = 0) a uložte tlačítkem nebo Ctrl+S / ⌘S. Když stav nenavazuje na okolní ruční odečty, aplikace ukáže varování s volbami *Zpět k úpravě*, *Uložit přesto* a *Uložit jako výměnu měřiče*.
+2. **Přehled** – na hlavní stránce jsou záznamy od nejnovějšího s rozdíly. Filtr „Zobrazit pouze odečty“ skryje odhady a u rozdílu ukáže délku intervalu. Tlačítkem „Export CSV“ stáhnete všechny záznamy pro Excel.
+3. **Oprava a výměna měřiče** – v editaci záznamu opravíte hodnoty nebo označíte měřič, který byl u odečtu vyměněn (příznak patří na první odečet nového měřiče).
+4. **Grafy** – měsíční spotřeba, celkové stavy, volba období a meziroční porovnání.
+5. **Chybějící data** – vytvořte odhady pro měsíce bez odečtu a zkontrolujte, že uložené odhady odpovídají odečtům.
+
+## 🧮 Jak aplikace počítá
+
+Výpočty jsou v jednom modulu `app/services/vypocty.py` (čisté funkce pokryté testy):
+
+- **Ruční odečty vs. odhady** – statistiky (měsíce, roky, anomálie) vycházejí jen z ručních odečtů. Odhady (`source = true`) slouží tabulce a z výpočtů přebírají jen příznak výměny měřiče.
+- **Rozpočet podle dní** – spotřeba mezi dvěma ručními odečty se rozloží rovnoměrně na dny intervalu `[od, do)` a sečte do kalendářních měsíců a let. Interval 1. 12. → 1. 1. tak patří do prosince.
+- **Úplné měsíce** – v měsíčním grafu je hodnota jen u měsíce, který je pro daný měřič pokrytý celý. Probíhající měsíc se ukáže až po dalším odečtu, období grafu (3 měsíce až 3 roky) se počítá v úplných měsících.
+- **Dopočtené měsíce** – když mezi dvěma ručními odečty leží celý měsíc bez odečtu, je hodnota označená jako odhad (světlejší sloupec, v tabulce let „≈“).
+- **Výměna měřiče** – interval končící odečtem s příznakem výměny není spotřeba. Měsíc, do kterého zasahuje, je u daného měřiče prázdný, a rok s výměnou nejde meziročně srovnat.
+- **FVE** – počítadlo je kumulativní; hodnota 0 znamená „neevidováno“. Ve statistikách se nula přemostí k další nenulové hodnotě, v tabulce rozdíl zůstane prázdný.
+- **Anomálie** – pokles stavu mezi ručními odečty bez příznaku výměny se ze součtů nevyhazuje (překlep se vyruší s dalším nafouknutým intervalem), jen se na něj upozorní pod grafem.
+- **Meziroční porovnání** – rok Y se srovnává se stejným obdobím roku Y−1 (u rozpracovaného roku do stejného dne; 29. 2. se posune na 1. 3.). Srovnání se ukáže jen tehdy, když má měřič pokrytá obě období celá.
+- **Odhady chybějících měsíců** – návrh se zakládá k 1. dni měsíce bez odečtu, hodnoty jsou lineární odhad podle dní mezi okolními ručními odečty. Mezeru s výměnou měřiče (nebo bez navazujícího ručního odečtu) aplikace přeskočí a vypíše s důvodem.
+- **Přepočet odhadů** – po změně ručního odečtu se v jedné transakci přepočítají odhady mezi předchozím a následujícím ručním odečtem. Úprava samotného odhadu přepočet nespouští; při další změně okolních odečtů se ale přepíše. Starší nesrovnalosti ukáže a opraví „Kontrola uložených odhadů“.
 
 ## 🚀 Deployment
 
@@ -37,129 +56,58 @@ Aplikace poskytuje jednoduché a intuitivní rozhraní pro evidenci spotřeby en
 
 - Docker a Docker Compose
 - Externí MySQL/MariaDB databáze
+- Síť `proxy_network` pro reverse proxy (v produkci openresty)
 
 ### Docker Compose
-
-Aplikace je připravena pro spuštění pomocí Docker Compose. Soubor `docker-compose.yml` obsahuje veškerou potřebnou konfiguraci.
-
-#### Spuštění
 
 ```bash
 docker compose up -d --build
 ```
 
-Aplikace bude dostupná na `http://localhost:8000` (port 8000 je mapován na port 8000 v kontejneru).
+Aplikace poběží na `http://localhost:8080` (port 8080 na hostu → 8000 v kontejneru). Kontejner běží pod uživatelem `appuser` (UID 1000), má healthcheck na `/health` a časovou zónu `Europe/Prague`.
 
-#### Konfigurace
+Místo lokálního buildu lze v `docker-compose.yml` použít hotový image z GHCR – zakomentujte `build` a odkomentujte `image: ghcr.io/elvisek2020/web-evidence_spotreby_energii:latest`.
 
-Aplikace je konfigurována pomocí `.env` souboru a `docker-compose.yml`:
+### Konfigurace
 
-**Environment variables (.env soubor):**
+Proměnné prostředí se čtou ze souboru `.env` (šablona je v `.env.example`, `.env` se necommituje a do image se nedostane díky `.dockerignore`):
 
-Vytvořte soubor `.env` v kořenovém adresáři projektu (můžete použít `.env.example` jako šablonu).
+| Proměnná | Povinná | Výchozí | Popis |
+|----------|---------|---------|-------|
+| `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD` | ano | – | Připojení k MySQL/MariaDB |
+| `TZ` | ne | `Europe/Prague` | Časová zóna – určuje „dnešní“ datum pro validaci odečtů |
+| `LOG_LEVEL` | ne | `INFO` | Úroveň logování (`DEBUG`, `INFO`, `WARNING`, …) |
+| `ALLOWED_ORIGINS` | ne | prázdné | Čárkou oddělené originy pro CORS; prázdné = CORS vypnutý |
 
-**docker-compose.yml:**
+### Databáze a migrace
 
-```yaml
-services:
-  spotreba:
-    build: .
-    container_name: spotreba-energii
-    hostname: spotreba-energii
-    restart: unless-stopped
-    environment:
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_DATABASE=${DB_DATABASE}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-    networks:
-      - proxy_network
-    ports:
-      - "8000:8000"
+Schéma se upravuje automaticky při startu aplikace (`app/migrations.py`), ručně se nic nespouští:
 
-networks:
-  proxy_network:
-    external: true
-```
+1. **Nová instalace** – tabulka `spotreba` vznikne z modelu (sloupce `DOUBLE`, unikátní index na `datum`).
+2. **Starší instalace** – doplní se chybějící sloupce (`fve`, `vymena_*`).
+3. **Unikátní index na `datum`** – přidá se, jen když v tabulce nejsou duplicitní data. Jinak se do logu zapíše ERROR se seznamem duplicit a index se doplní při dalším startu po jejich odstranění.
 
-**Důležité:** Soubor `.env` obsahuje citlivé údaje a je v `.gitignore`, takže se nebude commitovat na GitHub. Pro ostatní vývojáře je k dispozici `.env.example` jako šablona.
-
-#### Update aplikace
+### Update aplikace
 
 ```bash
-docker compose pull
-docker compose up -d
+docker compose pull      # při použití image z GHCR
+docker compose up -d --build
 ```
 
-#### Rollback na konkrétní verzi
+Před vydáním zvyšte verzi v `app/static/version.json`. Aplikace ji čte při startu, zobrazuje v zápatí a přidává k adresám CSS a JS (`?v=`), takže prohlížeče po nasazení načtou nové soubory.
 
-V `docker-compose.yml` změňte image tag:
+### Rollback na konkrétní verzi
 
-```yaml
-services:
-  spotreba:
-    image: ghcr.io/elvisek2020/web-evidence_spotreby_energii:latest
-```
+V `docker-compose.yml` nastavte konkrétní tag image, např. `ghcr.io/elvisek2020/web-evidence_spotreby_energii:sha-<commit-sha>`.
 
 ### GitHub a CI/CD
 
-#### Inicializace repozitáře
+Po pushi do větve `main` spustí GitHub Actions (`.github/workflows/docker.yml`):
 
-1. **Vytvoření GitHub repozitáře**:
+1. **test** – unit testy (`pytest`) v kontejneru `python:3.13-slim`,
+2. **build** – jen po úspěšných testech sestaví image pro `linux/amd64` a `linux/arm64` a nahraje ho do GHCR s tagy `latest`, `main` a `sha-<commit-sha>`.
 
-   ```bash
-   # Vytvořte nový repozitář na GitHubu
-   # Název: web-evidence_spotreby_energii
-   ```
-2. **Inicializace lokálního repozitáře**:
-
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/elvisek2020/web-evidence_spotreby_energii.git
-   git push -u origin main
-   ```
-3. **Vytvoření GitHub Actions workflow**:
-
-   Vytvořte soubor `.github/workflows/docker.yml` s workflow pro automatické buildy Docker image. Příklad workflow najdete v dokumentaci GitHub Actions nebo v existujících projektech.
-4. **Nastavení viditelnosti image**:
-
-   - Po prvním buildu jděte na GitHub → Packages
-   - Najděte vytvořený package `web-evidence_spotreby_energii`
-   - V Settings → Change visibility nastavte na **Public**
-
-#### Commitování změn a automatické buildy
-
-1. **Proveďte změny v kódu**
-2. **Commit a push**:
-
-   ```bash
-   git add .
-   git commit -m "Popis změn"
-   git push origin main
-   ```
-3. **Automatický build**:
-
-   - Po push do `main` branch se automaticky spustí GitHub Actions workflow
-   - Vytvoří se Docker image pro `linux/amd64` a `linux/arm64`
-   - Image se nahraje do GHCR
-   - Taguje se jako `latest` a `sha-<commit-sha>`
-4. **Sledování buildu**:
-
-   - GitHub → Actions → zobrazí se běžící workflow
-   - Po dokončení je image dostupná na `ghcr.io/elvisek2020/web-evidence_spotreby_energii:latest`
-
-#### GitHub Container Registry (GHCR)
-
-Aplikace je dostupná jako Docker image z GitHub Container Registry:
-
-- **Latest**: `ghcr.io/elvisek2020/web-evidence_spotreby_energii:latest`
-- **Konkrétní commit**: `ghcr.io/elvisek2020/web-evidence_spotreby_energii:sha-<commit-sha>`
-
-Image je **veřejný** (public), takže není potřeba autentizace pro pull.
+Image je veřejný: `ghcr.io/elvisek2020/web-evidence_spotreby_energii`.
 
 ---
 
@@ -167,174 +115,156 @@ Image je **veřejný** (public), takže není potřeba autentizace pro pull.
 
 ### 🏗️ Architektura
 
-Aplikace je postavena jako moderní webová aplikace s oddělením backendu a frontendu:
+- **Backend** – FastAPI; HTML stránky v `routers/pages.py`, JSON API v `routers/spotreba.py`, `grafy.py` a `missing_data.py`. Routery jsou tenké vrstvy nad službami.
+- **Služby** – `services/vypocty.py` obsahuje čisté výpočty bez DB, `services/zaznamy.py` operace nad databází (načtení, přepočet odhadů v transakci).
+- **Měřiče** – jediná definice v `app/meters.py` (`METERS`: klíč, popisek, jednotka, barva, osa, chování FVE). Šablony, grafy i výpočty je procházejí v cyklu.
+- **Frontend** – serverové vykreslení Jinja2 (přehled, formuláře, chybějící data), vanilla JS v `static/js/app.js` (API volání, modální dialogy, toasty), Chart.js pro grafy, Tailwind CSS přes Play CDN.
+- **Databáze** – externí MySQL/MariaDB přes SQLAlchemy ORM; schéma spravují migrace při startu.
 
-- **Backend**: Python FastAPI framework s REST API endpointy
-- **Frontend**: Server-side rendering pomocí Jinja2 templates s Alpine.js pro interaktivitu
-- **Databáze**: Externí MySQL/MariaDB databáze s SQLAlchemy ORM
-- **Styling**: Tailwind CSS s boxovým design systémem
-- **Grafy**: Chart.js pro interaktivní vizualizaci dat
+**Tabulka `spotreba`:**
 
-**Databázová struktura:**
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| `id` | INT | Primární klíč |
+| `datum` | DATE, unikátní | Datum odečtu |
+| `elektromer_vysoky`, `elektromer_nizky` | DOUBLE | Stav elektroměru VT/NT (kWh) |
+| `plynomer`, `vodomer` | DOUBLE | Stav plynoměru a vodoměru (m³) |
+| `fve` | DOUBLE, NULL | Kumulativní počítadlo výroby FVE (kWh), 0 = neevidováno |
+| `source` | BOOL | `false` = ruční odečet, `true` = automaticky doplněný odhad |
+| `vymena_elektromer_vysoky`, `vymena_elektromer_nizky`, `vymena_plynomer`, `vymena_vodomer`, `vymena_fve` | BOOL | U odečtu byl nasazen nový měřič |
 
-- **Databáze**: `spotreba-data` (externí)
-- **Tabulka**: `spotreba`
-- **Sloupce**:
-  - `id` - Primární klíč
-  - `datum` - Datum měření (formát YYYY-MM-DD)
-  - `elektromer_vysoky` - Stav elektroměru vysoký tarif (kWh)
-  - `elektromer_nizky` - Stav elektroměru nízký tarif (kWh)
-  - `plynomer` - Stav plynoměru (m³)
-  - `vodomer` - Stav vodoměru (m³)
-  - `fve` - Stav počítadla výroby FVE na střídači (kWh, kumulativní jako ostatní měřiče; 0 = neevidováno)
-  - `source` - Zdroj dat (boolean: false = manuální, true = automaticky doplněné)
-  - `vymena_elektromer_vysoky`, `vymena_elektromer_nizky`, `vymena_plynomer`, `vymena_vodomer`, `vymena_fve` - Příznak výměny měřiče u daného odečtu (boolean)
-
-Chybějící sloupce se doplní automaticky při startu aplikace (`ensure_schema` v `app/main.py`), migrace se nespouští ručně.
+Starší instalace mohou mít sloupce měřičů typu `FLOAT` (jednoduchá přesnost); migrace je nemění.
 
 ### Technický stack
 
-**Backend:**
-
-- FastAPI (Python 3.11+)
-- SQLAlchemy ORM pro práci s databází
-- Pydantic pro validaci dat a serializaci
-- Uvicorn jako ASGI server
-- PyMySQL jako MySQL driver
-
-**Frontend:**
-
-- Jinja2 template engine pro server-side rendering
-- Alpine.js pro reaktivní JavaScript
-- Tailwind CSS pro styling
-- Chart.js pro interaktivní grafy
-- HTML5 + CSS3
-
-**Deployment:**
-
-- Docker
-- Docker Compose
+- **Backend:** Python 3.13, FastAPI 0.141, Starlette 1.7, Pydantic 2.13, SQLAlchemy 2.1, PyMySQL, Uvicorn
+- **Frontend:** Jinja2, vanilla JavaScript, Tailwind CSS (Play CDN 3.4), Chart.js 4.5
+- **Testy:** pytest
+- **Deployment:** Docker, Docker Compose, GitHub Actions, GHCR
 
 ### 📁 Struktura projektu
 
 ```
 web-evidence_spotreby_energii/
 ├── app/
-│   ├── main.py              # FastAPI aplikace
-│   ├── database.py          # Databázové připojení
-│   ├── models.py            # SQLAlchemy modely
-│   ├── schemas.py           # Pydantic schémata
-│   ├── routers/             # API endpointy
-│   │   ├── spotreba.py      # CRUD operace pro spotřebu
-│   │   ├── grafy.py         # API pro grafy
-│   │   └── missing_data.py  # Automatické doplnění dat
-│   ├── templates/           # Jinja2 šablony
-│   │   ├── base.html        # Základní template
-│   │   ├── index.html       # Hlavní stránka
-│   │   ├── evidovat.html    # Přidávání záznamů
-│   │   ├── edit.html        # Editace záznamů
-│   │   ├── grafy.html       # Grafické zobrazení
-│   │   └── missing_data.html # Chybějící data
-│   └── static/              # Statické soubory
-│       ├── css/
-│       │   └── style.css    # Custom CSS s Tailwind
-│       └── js/
-│           └── app.js       # Hlavní JavaScript
-├── requirements.txt         # Python závislosti
-├── Dockerfile               # Docker image definice
-├── docker-compose.yml       # Docker Compose konfigurace
-├── .env                     # Environment variables (není v git)
-├── .env.example             # Šablona pro environment variables
-├── .gitignore               # Git ignore soubor
-└── README.md                # Tato dokumentace
+│   ├── main.py              # FastAPI aplikace, lifespan, chybové stránky, /health
+│   ├── database.py          # Připojení k databázi
+│   ├── models.py            # SQLAlchemy model Spotreba
+│   ├── schemas.py           # Pydantic schémata API
+│   ├── meters.py            # Definice měřičů (METERS)
+│   ├── migrations.py        # Úpravy schématu při startu
+│   ├── templating.py        # Jinja2: verze, globální proměnné, filtry
+│   ├── formatovani.py       # České formátování čísel a dat
+│   ├── services/
+│   │   ├── vypocty.py       # Čisté výpočty (rozdíly, měsíce, roky, odhady, kontroly)
+│   │   └── zaznamy.py       # Operace nad DB (načtení, přepočet odhadů)
+│   ├── routers/
+│   │   ├── pages.py         # HTML stránky
+│   │   ├── spotreba.py      # API záznamů, kontrola návaznosti, CSV export
+│   │   ├── grafy.py         # API grafů a meziročního porovnání
+│   │   └── missing_data.py  # API návrhů a přepočtu odhadů
+│   ├── templates/           # Jinja2 šablony (_makra.html = sdílená makra)
+│   └── static/              # style.css, app.js, version.json
+├── tests/test_vypocty.py    # Unit testy výpočetní vrstvy
+├── scripts/testovaci_data.py  # Naplnění lokální testovací instance
+├── docker-compose.yml       # Produkční compose
+├── docker-compose.test.yml  # Lokální test: aplikace + MariaDB
+├── Dockerfile
+├── requirements.txt / requirements-dev.txt
+└── README.md
 ```
 
 ### 🔧 API dokumentace
 
-Aplikace poskytuje REST API endpointy pro správu dat:
+**HTML stránky:**
 
-**Hlavní endpointy (HTML stránky):**
+- `GET /` – přehled (parametry `strana`, `jen_odecty=1`)
+- `GET /evidovat` – nový odečet
+- `GET /edit/{id}` – editace záznamu
+- `GET /grafy` – grafy a meziroční porovnání
+- `GET /missing-data` – chybějící data a kontrola odhadů
 
-- `GET /` - Hlavní stránka s přehledem záznamů
-- `GET /evidovat` - Stránka pro přidávání záznamů
-- `GET /edit/{id}` - Stránka pro editaci záznamu
-- `GET /grafy` - Stránka s grafy
-- `GET /missing-data` - Stránka s chybějícími daty
+**Záznamy:**
 
-**API endpointy (JSON):**
+- `GET /api/spotreba` – seznam s rozdíly, nejnovější první (parametry `limit` 1–100, výchozí 12; `offset`; `source_filter` – `false` = jen ruční odečty, `true` = jen odhady)
+- `GET /api/spotreba/count` – počet záznamů (parametr `source_filter`)
+- `GET /api/spotreba/{id}` – jeden záznam
+- `POST /api/spotreba` – nový záznam; odpověď obsahuje `prepocteno_odhadu`
+- `PUT /api/spotreba/{id}` – úprava (posílají se jen měněná pole, `null` není povolený)
+- `DELETE /api/spotreba/{id}` – smazání; odpověď obsahuje `prepocteno_odhadu`
+- `POST /api/spotreba/kontrola` – varování k odečtu před uložením (`{varovani: [{meric, typ, zprava, …}]}`), nic neukládá
+- `GET /api/spotreba/export.csv` – všechny záznamy jako CSV (středník, desetinná čárka, UTF-8 s BOM)
 
-- `GET /api/spotreba` - Seznam záznamů (query parametry: `limit`, `manual_only`)
-- `POST /api/spotreba` - Vytvoření záznamu
-- `PUT /api/spotreba/{id}` - Aktualizace záznamu
-- `DELETE /api/spotreba/{id}` - Smazání záznamu
-- `GET /api/grafy/data` - Kumulativní stavy měřičů (query parametr `period`)
-- `GET /api/grafy/monthly-diff` - Měsíční spotřeba jako přírůstky (query parametr `period`)
-- `GET /api/grafy/yoy` - Meziroční porovnání spotřeby (roky vzestupně)
-- `GET /api/missing-data/suggestions` - Návrhy chybějících dat (nejnovější první)
+**Grafy:**
 
-Parametr `period` u grafů přijímá hodnoty `3months`, `6months`, `year`, `2years`, `3years` a `all` (výchozí).
+- `GET /api/grafy/monthly-diff?period=…` – spotřeba po kalendářních měsících
+- `GET /api/grafy/data?period=…` – stavy měřičů u jednotlivých záznamů
+- `GET /api/grafy/yoy` – roky od nejnovějšího s pokrytím a srovnáním se stejným obdobím loňska
+- `GET /api/grafy/summary` – počty záznamů a rozsah dat
+
+Oba grafové endpointy vracejí stejný tvar `{popisky, popisky_dlouhe, rady: {meric: {label, jednotka, barva, osa, hodnoty, odhad, poznamka}}, anomalie}`. `null` v hodnotách přerušuje řadu, důvod je v `poznamka`. Parametr `period` přijímá `3months`, `6months`, `year`, `2years`, `3years` a `all` (výchozí). U měsíčního grafu znamená počet posledních úplných měsíců, u stavů počet dní zpět.
+
+**Chybějící data:**
+
+- `GET /api/missing-data/suggestions` – návrhy odhadů, nejnovější první
+- `POST /api/missing-data/create` – vytvoří všechny návrhy
+- `POST /api/missing-data/create-single` – vytvoří návrh k danému datu (`{datum}`, hodnoty dopočítá server)
+- `GET /api/missing-data/prepocet` – náhled odhadů, které neodpovídají ručním odečtům (změny a konflikty)
+- `POST /api/missing-data/prepocet` – přepočítá všechny uložené odhady
+
+**Ostatní:** `GET /health` – stav aplikace a připojení k DB, včetně verze.
+
+Chyby API vracejí `{"detail": "…"}` s českou hláškou, u validace (422) např. `Datum: nesmí být v budoucnosti; Počítadlo FVE: pole je povinné`.
 
 ### 💻 Vývoj
 
-#### Přidání nových funkcí
+**Unit testy** (bez databáze):
 
-1. **Backend změny**:
+```bash
+uv run --no-project --python 3.13 --with-requirements requirements-dev.txt pytest -q
+```
 
-   - API endpointy: `app/routers/`
-   - Databázové modely: `app/models.py`
-   - Business logika: `app/routers/` (v jednotlivých routerech)
-   - Databázové připojení: `app/database.py`
-2. **Frontend změny**:
+**Lokální testovací instance** – aplikace s prázdnou MariaDB, bez vazby na produkční databázi:
 
-   - UI logika: `app/static/js/app.js`
-   - HTML struktura: `app/templates/`
-   - Styly: `app/static/css/style.css` (používejte box-style komponenty a Tailwind CSS)
+```bash
+docker compose -f docker-compose.test.yml up -d --build
+python3 scripts/testovaci_data.py
+```
 
-#### Testování
+Aplikace poběží na `http://localhost:18080`. Skript `testovaci_data.py` zapisuje jen na localhost a jen do prázdné databáze; data obsahují mezeru bez odečtu, výměnu vodoměru, zahájení evidence FVE, překlep a zastaralý odhad. Úklid:
 
-- **Lokální testování**: Spusťte aplikaci pomocí `docker compose up -d --build` a otestujte všechny funkce
-- **API testování**: Použijte nástroje jako Postman nebo curl pro testování REST API endpointů
-- **Formulářová validace**: Otestujte všechny formuláře s různými vstupy (validní i nevalidní)
+```bash
+docker compose -f docker-compose.test.yml down -v
+```
 
-#### Debugging
+**Přidání měřiče** – doplnit sloupce do `models.py`, `schemas.py` a migrace do `migrations.py`, záznam do `METERS` v `meters.py`. Šablony, grafy a výpočty ho převezmou samy.
 
-- Nastavte `LOG_LEVEL=DEBUG` v `.env` souboru pro detailní logy (pokud je podporováno)
-- Server loguje všechny důležité události s timestampy
-- Frontend loguje chyby do konzole prohlížeče
-- Použijte Docker logs: `docker compose logs -f`
+**Debugging** – `LOG_LEVEL=DEBUG` v `.env`, logy kontejneru přes `docker compose logs -f`.
 
 ### 🎨 UI/UX
 
-Aplikace používá **box-style komponenty** pro konzistentní vzhled:
-
-- **Konzistentní mezery**: Tailwind spacing scale (4px, 8px, 12px, 16px, 24px, 32px)
-- **Boxový design**: Bílé karty s stíny a zaoblenými rohy
-- **Tlačítka místo tabů**: Konzistentní navigace pomocí tlačítek
-- **Pattern "App Name - Tab Name"**: "Evidování spotřeby - Přehled"
-- **Responzivní design**: Desktop-first s deklarativní responzivitou
-- **Přístupnost (A11y)**: Focus-visible, ARIA atributy, keyboard navigation, WCAG AA standardy
-
-**Komponentní třídy:**
-
-```css
-.btn - Základní tlačítko
-.btn-primary - Modré primární tlačítko
-.btn-secondary - Šedé sekundární tlačítko
-.btn-outline - Bílé tlačítko s modrým ohraničením
-.input - Formulářové pole
-.card - Hlavní box (bílý s stínem)
-```
+- Karty s bílým (v tmavém režimu šedým) pozadím, stínem a zaoblenými rohy, Tailwind utility třídy přímo v šablonách
+- Pattern titulku „Evidování spotřeby - Záložka“
+- Potvrzení akcí přes modální dialog (`showConfirm` v `app.js`), výsledky akcí jako toasty, i po přesměrování
+- Opakované části šablon jsou v `templates/_makra.html` (pole měřiče, buňka tabulky, stránkování)
+- `static/css/style.css` obsahuje jen doplňková obyčejná pravidla – Tailwind Play CDN nezpracovává `@apply` v externích souborech
+- Přístupnost: skip link, `aria-current` v navigaci, focus trap v dialogu, respektování `prefers-reduced-motion`
 
 ### 🔒 Bezpečnost
 
-- **Prepared statements**: Ochrana proti SQL injection pomocí SQLAlchemy ORM
-- **Validace dat**: Pydantic schémata pro typovou validaci na úrovni API
-- **XSS ochrana**: Jinja2 autoescaping pro automatické escapování HTML
-- **Environment variables**: Citlivé údaje v `.env` souboru (není v git)
+- **Aplikace nemá přihlášení.** Produkce na `spotreba.elvisek.cz` je záměrně veřejná, a to včetně API pro zápis a mazání záznamů. Kdo zná adresu, může data číst i měnit. Pokud by to přestalo vyhovovat, nabízí se ochrana na reverse proxy (Access List / basic auth) nebo přihlášení podle standardu `web-app-auth`.
+- Port 8080 je v `docker-compose.yml` publikovaný na všech rozhraních hostu, aplikace je tedy dostupná i mimo reverse proxy.
+- SQL přes SQLAlchemy ORM (parametrizované dotazy), validace vstupů Pydantic schématy, autoescaping Jinja2
+- Bezpečnostní hlavičky: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`
+- Kontejner běží pod non-root uživatelem; `.dockerignore` drží `.env` a `.git` mimo image
 
-### 🐛 Známé problémy
+### 🐛 Známá omezení a plánovaná vylepšení
 
-V současné době nejsou známé žádné kritické problémy.
+- Tailwind CSS se načítá z Play CDN (kompilace v prohlížeči, závislost na internetu); do budoucna build CSS při sestavení image nebo přechod na `app.css` a HTMX podle standardu `web-app-stack` / `web-app-ui`
+- Starší instalace mohou mít sloupce měřičů `FLOAT` s jednoduchou přesností (u stavů nad ~130 000 šum v setinách); případná změna na `DOUBLE` je ruční `ALTER TABLE`
+- Ručně upravený odhad se při další změně okolních ručních odečtů přepíše – skutečný odečet je potřeba převést na ruční (zrušit „Automaticky doplněný záznam“)
+- Mezeru s výměnou měřiče je potřeba doplnit ručně, automatický návrh ji přeskočí
+- Probíhající měsíc se v měsíčním grafu ukáže až po dalším odečtu
 
 ### 📚 Další zdroje
 

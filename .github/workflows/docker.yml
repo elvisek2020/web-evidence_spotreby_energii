@@ -11,7 +11,22 @@ permissions:
   packages: write
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    # Stejná verze Pythonu jako v Dockerfile
+    container: python:3.13-slim
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        run: pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+
+      - name: Run tests
+        run: pytest -q
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
