@@ -1,530 +1,201 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_macros.html" import alert, empty_state %}
 
-{% block title %}{{ APP_TITLE }} - Grafy{% endblock %}
+{% block title %}Grafy — {{ app_name }}{% endblock %}
 
 {% block head %}
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+<script src="/static/js/grafy.js?v={{ app_version }}" defer></script>
 {% endblock %}
+
+{% macro karta_grafu(klic, nadpis, jednotka) %}
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2 class="card-title">{{ nadpis }}</h2>
+            <p class="card-subtitle">{{ jednotka }}{% if rezim == 'mesice' %} za měsíc{% else %} – stav měřiče{% endif %}</p>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="graf">
+            <canvas data-graf="{{ klic }}" role="img" aria-label="{{ nadpis }} ({{ jednotka }}) – hodnoty jsou v tabulce pod grafy"></canvas>
+        </div>
+    </div>
+</section>
+{% endmacro %}
 
 {% block content %}
-<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
-    <!-- Loading skeleton -->
-    <div id="loading-skeleton" class="hidden">
-        <div class="animate-pulse">
-            <div class="h-64 bg-gray-200 dark:bg-gray-700 rounded-lg mb-4"></div>
-            <div class="h-64 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-        </div>
+<div class="page-header">
+    <div class="page-header-text">
+        <h1 class="page-title">Grafy</h1>
+        <p class="page-description">
+            {% if rezim == 'mesice' %}Spotřeba po kalendářních měsících, rozpočítaná podle dní mezi ručními odečty
+            {% else %}Stavy měřičů u jednotlivých záznamů včetně odhadů{% endif %}
+        </p>
     </div>
+</div>
 
-    <!-- Kontrolky pro zapínání/vypínání měřičů -->
-    <div class="mb-6">
-        <div class="flex flex-wrap gap-4 justify-center mb-4">
-            {% for meter in METERS %}
-            <label class="inline-flex items-center px-4 py-2 bg-{{ meter.tw_barva }}-100 text-{{ meter.tw_barva }}-800 rounded-lg cursor-pointer hover:bg-{{ meter.tw_barva }}-200 transition-colors">
-                <input type="checkbox" id="toggle-{{ meter.key }}" data-toggle-meter="{{ meter.key }}" checked class="mr-2">
-                <span class="text-sm font-medium">{{ meter.label }}</span>
-            </label>
+<nav class="tabs" aria-label="Druh grafu">
+    <a href="?rezim=mesice&obdobi={{ obdobi }}" class="tabs-item {% if rezim == 'mesice' %}tabs-item--active{% endif %}"{% if rezim == 'mesice' %} aria-current="page"{% endif %}>Měsíční spotřeba</a>
+    <a href="?rezim=stavy&obdobi={{ obdobi }}" class="tabs-item {% if rezim == 'stavy' %}tabs-item--active{% endif %}"{% if rezim == 'stavy' %} aria-current="page"{% endif %}>Stavy měřičů</a>
+</nav>
+
+<div class="chips mb-5" role="group" aria-label="Období">
+    {% for klic, popisek in volby_obdobi %}
+    <a href="?rezim={{ rezim }}&obdobi={{ klic }}" class="chip {% if obdobi == klic %}chip--active{% endif %}"{% if obdobi == klic %} aria-current="true"{% endif %}>{{ popisek }}</a>
+    {% endfor %}
+</div>
+
+{% if graf.anomalie %}
+    {% call alert('warn') %}
+        <strong>Stav měřiče klesl bez označené výměny</strong>
+        <ul>
+            {% for nalez in graf.anomalie[:10] %}
+            <li>{{ nalez.label }}: {{ nalez.od|datum_kratke }} → {{ nalez.do|datum_kratke }}, pokles o {{ (-nalez.spotreba)|cislo_cz }} {{ nalez.jednotka }}</li>
             {% endfor %}
+            {% if graf.anomalie|length > 10 %}<li>… a další ({{ graf.anomalie|length - 10 }})</li>{% endif %}
+        </ul>
+        <p class="text-sm mt-2">Zkontrolujte odečty v přehledu, případně u novějšího odečtu označte výměnu měřiče.</p>
+    {% endcall %}
+{% endif %}
+
+{% if graf.popisky %}
+<script type="application/json" id="graf-data">{{ {'rezim': rezim, 'data': graf_json, 'merice': METERS_INFO}|tojson }}</script>
+
+<div class="stack-lg">
+    {% set prvni = SKUPINY_GRAFU[0] %}
+    {{ karta_grafu(prvni[0], prvni[1], prvni[2]) }}
+    <div class="mrizka-2">
+        {% for klic, nadpis, jednotka in SKUPINY_GRAFU[1:] %}
+        {{ karta_grafu(klic, nadpis, jednotka) }}
+        {% endfor %}
+    </div>
+</div>
+
+{% if rezim == 'mesice' %}
+<details class="card mt-5" id="tabulka-hodnot" data-remember-open>
+    <summary class="card-header"><h2 class="card-title">Tabulka hodnot</h2></summary>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Měsíc</th>
+                    {% for meter in METERS %}<th class="num">{{ meter.kratky }} ({{ meter.jednotka }})</th>{% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for i in range(graf.popisky|length)|reverse %}
+                <tr>
+                    <td class="nowrap">{{ graf.popisky_dlouhe[i] }}</td>
+                    {% for meter in METERS %}
+                    {% set rada = graf.rady[meter.key] %}
+                    {% set hodnota = rada.hodnoty[i] %}
+                    <td class="num">
+                        {% if hodnota is none %}<span class="text-muted" title="{{ rada.poznamka[i] }}">–</span>
+                        {% else %}{% if rada.odhad[i] %}≈ {% endif %}{{ hodnota|cislo_cz(0) }}{% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-body text-sm text-muted">≈ měsíc dopočtený z delšího intervalu bez odečtu · – výměna měřiče nebo chybějící údaje</div>
+</details>
+{% else %}
+<p class="text-sm text-muted mt-4">Stavy jednotlivých záznamů v tabulce najdete v <a href="/">přehledu</a>.</p>
+{% endif %}
+
+{% else %}
+<section class="card">
+    {% if rezim == 'mesice' %}
+        {% set text = 'Graf potřebuje celý kalendářní měsíc mezi dvěma ručními odečty. Zkuste delší období, nebo zapište další odečet.' %}
+    {% else %}
+        {% set text = 'Ve zvoleném období nejsou žádné záznamy.' %}
+    {% endif %}
+    {% call empty_state('chart', 'Zatím není co zobrazit', text) %}
+        {% if obdobi != 'all' %}
+        <a href="?rezim={{ rezim }}&obdobi=all" class="btn btn-outline">Zobrazit celé období</a>
+        {% else %}
+        <a href="/evidovat" class="btn btn-primary">{{ icon('plus', 18) }}Zapsat odečet</a>
+        {% endif %}
+    {% endcall %}
+</section>
+{% endif %}
+
+<section class="card mt-5">
+    <div class="card-header">
+        <div>
+            <h2 class="card-title">Meziroční porovnání</h2>
+            <p class="card-subtitle">Spotřeba po kalendářních letech a rozdíl oproti stejnému období předchozího roku</p>
         </div>
     </div>
-
-    <!-- Hlavní graf; hlášky se zobrazují vedle něj, aby canvas zůstal zachovaný -->
-    <div id="chart-wrapper" class="mb-6">
-        <canvas id="main-chart" style="height: 500px; width: 100%;" role="img" aria-label="Graf spotřeby energií"></canvas>
+    {% if roky %}
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Rok</th>
+                    <th>Období</th>
+                    {% for meter in METERS %}<th class="num">{{ meter.kratky }} ({{ meter.jednotka }})</th>{% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for rok in roky %}
+                {% set srovnani_roku = rok.merice.values()|selectattr('srovnani')|map(attribute='srovnani')|first %}
+                <tr>
+                    <td class="font-bold">{{ rok.rok }}</td>
+                    <td class="nowrap">
+                        {% if rok.uplny_rok %}celý rok{% else %}{{ rok.od|den_mesic }} – {{ rok.do|den_mesic }}{% endif %}
+                        {% if srovnani_roku and not rok.uplny_rok %}
+                        <span class="rozdil">srovnáno s {{ srovnani_roku.od|den_mesic }} – {{ srovnani_roku.do|den_mesic }} {{ rok.rok - 1 }}</span>
+                        {% endif %}
+                    </td>
+                    {% for meter in METERS %}
+                    {% set hodnota = rok.merice[meter.key] %}
+                    <td class="num">
+                        {% if hodnota.hodnota is none %}
+                        <span class="text-muted">–</span>
+                        {% else %}
+                        <span class="hodnota"{% if not hodnota.uplne %} title="Neúplné: pokryto {{ hodnota.pokryto_dni }} z {{ rok.dni }} dní"{% endif %}>
+                            {%- if hodnota.odhad %}≈ {% endif %}{{ hodnota.hodnota|cislo_cz(0) }}{% if not hodnota.uplne %} *{% endif -%}
+                        </span>
+                        {% if hodnota.srovnani %}
+                        {% set s = hodnota.srovnani %}
+                        <span class="badge {{ {'lepsi': 'badge--success', 'horsi': 'badge--error'}.get(s.hodnoceni, '') }}"
+                              title="{{ {'lepsi': 'Lepší', 'horsi': 'Horší', 'stejne': 'Beze změny'}[s.hodnoceni] }} než loni ({{ s.loni|cislo_cz(0) }} {{ meter.jednotka }})">
+                            {{- '↑' if s.rozdil > 0 else ('↓' if s.rozdil < 0 else '=') }} {{ s.rozdil|abs|cislo_cz(0) }}
+                            {%- if s.rozdil_pct is not none %} ({{ s.rozdil_pct|abs|cislo_cz(1) }} %){% endif -%}
+                        </span>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-    <div id="chart-message" class="hidden"></div>
-
-    <!-- Upozornění na poklesy stavu bez označené výměny -->
-    <div id="anomalie-box" class="hidden mb-6 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-200" role="note"></div>
-
-    <!-- Tlačítka pro přepínání typu grafu a časového období -->
-    <div class="flex flex-wrap justify-between items-center gap-4">
-        <!-- Levá tlačítka -->
-        <div class="flex flex-wrap gap-4">
-            <div class="inline-flex rounded-md shadow-sm" role="group" aria-label="Druh dat">
-                <button type="button" data-mode="diff" id="mode-diff">Měsíční spotřeba</button>
-                <button type="button" data-mode="cumulative" id="mode-cumulative">Celkové stavy</button>
-            </div>
-
-            <button type="button" id="chart-type-btn" class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 font-medium rounded-lg hover:bg-blue-50 dark:hover:bg-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors border border-blue-200 dark:border-gray-600 shadow-sm">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
-                <span id="chart-type-text">Sloupcový graf</span>
-            </button>
-            <button type="button" id="toggle-all-btn" class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors border border-gray-200 dark:border-gray-600 shadow-sm">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                </svg>
-                <span id="toggle-all-text">Vypnout vše</span>
-            </button>
-        </div>
-
-        <!-- Pravá tlačítka -->
-        <div class="inline-flex rounded-md shadow-sm" role="group" aria-label="Období" id="period-buttons">
-            <button type="button" data-period="3months" id="period-3months">3 měsíce</button>
-            <button type="button" data-period="6months" id="period-6months">6 měsíců</button>
-            <button type="button" data-period="year" id="period-year">1 rok</button>
-            <button type="button" data-period="2years" id="period-2years">2 roky</button>
-            <button type="button" data-period="3years" id="period-3years">3 roky</button>
-            <button type="button" data-period="all" id="period-all">Vše</button>
-        </div>
+    <div class="card-body text-sm text-muted">
+        Štítek ukazuje rozdíl oproti stejnému období předchozího roku – zelený je lepší (u FVE vyšší výroba), červený horší.
+        ≈ část roku je dopočtená z delšího intervalu bez odečtu. * neúplné období (výměna měřiče nebo chybějící údaje), bez srovnání.
     </div>
+    {% else %}
+    <div class="card-body text-muted">Pro meziroční porovnání jsou potřeba aspoň dva ruční odečty.</div>
+    {% endif %}
 </section>
 
-<!-- Meziroční porovnání -->
-<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 text-center">Meziroční porovnání spotřeby</h3>
-    <div id="yoy-container">
-        <div class="animate-pulse flex justify-center py-8">
-            <div class="h-6 w-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
-        </div>
+<details class="card mt-5" id="napoveda-grafy" data-remember-open>
+    <summary class="card-header"><h2 class="card-title">Nápověda</h2></summary>
+    <div class="card-body">
+        <ul class="napoveda">
+            <li>Měsíční spotřeba je rozpočítaná do kalendářních měsíců podle dní mezi ručními odečty; probíhající měsíc se ukáže až po dalším odečtu.</li>
+            <li>Každý graf má jednu osu a jednu jednotku – elektřina a FVE v kWh, plyn a voda zvlášť v m³.</li>
+            <li>Světlejší sloupec a přerušovaná čára označují období dopočtené z delšího intervalu bez odečtu, dutý bod je uložený odhad.</li>
+            <li>Měsíc s výměnou měřiče se u daného měřiče nezobrazí – skok stavu není spotřeba.</li>
+            <li>Řadu v grafu elektřiny skryjete kliknutím na její název v legendě.</li>
+        </ul>
     </div>
-</section>
-
-<!-- Nápověda -->
-<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Nápověda</h3>
-    <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-        <p>• Měsíční spotřeba je rozpočítaná do kalendářních měsíců podle dní mezi ručními odečty; probíhající měsíc se ukáže až po dalším odečtu</p>
-        <p>• Světlejší sloupce a přerušovaná čára označují měsíce dopočtené z delšího intervalu bez odečtu</p>
-        <p>• Měsíc s výměnou měřiče se u daného měřiče nezobrazí – skok stavu není spotřeba</p>
-        <p>• Elektřina a FVE jsou na levé ose (kWh), plyn a voda na pravé ose (m³)</p>
-        <p>• Celkové stavy zobrazují stavy měřičů u jednotlivých záznamů, odhady jsou duté body</p>
-        <p>• Měřiče zapnete a vypnete zaškrtávacími políčky nebo kliknutím na legendu; období vyberete tlačítky vpravo dole</p>
-        <p>• Meziroční porovnání srovnává stejné období – rozpracovaný rok s loňskem do stejného dne</p>
-    </div>
-</section>
-{% endblock %}
-
-{% block scripts %}
-<script>
-const METERS = {{ METERS_INFO|tojson }};
-const periodKeys = ['3months', '6months', 'year', '2years', '3years', 'all'];
-
-let dataMode = 'diff'; // 'diff' nebo 'cumulative'
-let chartType = 'bar'; // 'bar' nebo 'line'
-let mainChart = null;
-let chartData = null;
-let currentPeriod = 'year';
-const datasetVisibility = Object.fromEntries(METERS.map(m => [m.key, true]));
-
-const fmtNum = (v, desetin = 2) => Number(v).toLocaleString('cs-CZ', { minimumFractionDigits: desetin, maximumFractionDigits: desetin });
-const fmtDatum = iso => { const [y, m, d] = iso.split('-').map(Number); return `${d}. ${m}. ${y}`; };
-const fmtDen = iso => { const [, m, d] = iso.split('-').map(Number); return `${d}. ${m}.`; };
-
-function rgba(hex, alpha) {
-    const n = parseInt(hex.slice(1), 16);
-    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
-}
-
-function isDark() {
-    return document.documentElement.classList.contains('dark');
-}
-
-// --- Tlačítka ---
-
-function periodButtonClass(index, active) {
-    const shape = index === 0
-        ? 'rounded-l-lg'
-        : (index === periodKeys.length - 1 ? 'rounded-r-lg -ml-px' : '-ml-px');
-    const colors = active
-        ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
-        : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600';
-    return `px-3 py-2 text-sm font-medium border transition-colors focus:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${shape} ${colors}`;
-}
-
-function updatePeriodButtons() {
-    periodKeys.forEach((key, index) => {
-        const button = document.getElementById(`period-${key}`);
-        if (button) {
-            button.className = periodButtonClass(index, key === currentPeriod);
-            button.setAttribute('aria-pressed', key === currentPeriod);
-        }
-    });
-}
-
-function updateModeButtons() {
-    const base = 'px-4 py-2 text-sm font-medium border focus:z-10 focus:ring-2 focus:ring-blue-300 transition-colors';
-    const active = 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700';
-    const inactive = 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600';
-    const diff = document.getElementById('mode-diff');
-    const cumulative = document.getElementById('mode-cumulative');
-    diff.className = `${base} rounded-l-lg ${dataMode === 'diff' ? active : inactive}`;
-    cumulative.className = `${base} rounded-r-lg ${dataMode === 'cumulative' ? active : inactive}`;
-    diff.setAttribute('aria-pressed', dataMode === 'diff');
-    cumulative.setAttribute('aria-pressed', dataMode === 'cumulative');
-}
-
-function updateToggleAllText() {
-    const allVisible = Object.values(datasetVisibility).every(v => v);
-    document.getElementById('toggle-all-text').textContent = allVisible ? 'Vypnout vše' : 'Zapnout vše';
-}
-
-// --- Načtení dat a vykreslení ---
-
-let chartWaitAttempts = 0;
-const maxChartWaitAttempts = 50;
-
-function waitForChart() {
-    if (typeof Chart !== 'undefined') {
-        loadChartData();
-    } else if (++chartWaitAttempts < maxChartWaitAttempts) {
-        setTimeout(waitForChart, 100);
-    } else {
-        showChartMessage(chybaHtml('Chyba při načítání knihovny', 'Chart.js se nepodařilo načíst. Zkuste obnovit stránku.'));
-    }
-}
-
-function chybaHtml(nadpis, text) {
-    return `
-        <div class="text-center py-12">
-            <svg class="mx-auto h-12 w-12 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-            </svg>
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">${escapeHtml(nadpis)}</h3>
-            <p class="text-gray-600 dark:text-gray-400">${escapeHtml(text)}</p>
-            <button type="button" onclick="location.reload()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
-                Obnovit stránku
-            </button>
-        </div>
-    `;
-}
-
-function bezDatHtml() {
-    const text = dataMode === 'diff'
-        ? 'Ve zvoleném období není žádný celý měsíc mezi dvěma ručními odečty.'
-        : 'Ve zvoleném období nejsou žádné záznamy.';
-    return `
-        <div class="text-center py-12">
-            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-            </svg>
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Žádná data k zobrazení</h3>
-            <p class="text-gray-600 dark:text-gray-400">${text} Zkuste delší období.</p>
-        </div>
-    `;
-}
-
-function showChartMessage(html) {
-    const message = document.getElementById('chart-message');
-    message.innerHTML = html;
-    message.classList.remove('hidden');
-    document.getElementById('chart-wrapper').classList.add('hidden');
-}
-
-function showChart() {
-    document.getElementById('chart-message').classList.add('hidden');
-    document.getElementById('chart-wrapper').classList.remove('hidden');
-}
-
-async function loadChartData() {
-    const loadingSkeleton = document.getElementById('loading-skeleton');
-    loadingSkeleton.classList.remove('hidden');
-    document.getElementById('chart-wrapper').classList.add('hidden');
-    document.getElementById('chart-message').classList.add('hidden');
-
-    try {
-        const endpoint = dataMode === 'diff' ? '/api/grafy/monthly-diff' : '/api/grafy/data';
-        chartData = await apiFetch(`${endpoint}?period=${encodeURIComponent(currentPeriod)}`);
-        loadingSkeleton.classList.add('hidden');
-        renderAnomalie(chartData.anomalie);
-
-        if (chartData.popisky.length === 0) {
-            if (mainChart) {
-                mainChart.destroy();
-                mainChart = null;
-            }
-            showChartMessage(bezDatHtml());
-            return;
-        }
-
-        showChart();
-        createMainChart();
-    } catch (error) {
-        console.error('Chyba při načítání dat grafů:', error);
-        loadingSkeleton.classList.add('hidden');
-        showChartMessage(chybaHtml('Chyba při načítání dat', error.message));
-    }
-}
-
-function renderAnomalie(anomalie) {
-    const box = document.getElementById('anomalie-box');
-    if (!anomalie || anomalie.length === 0) {
-        box.classList.add('hidden');
-        return;
-    }
-    const max = 10;
-    const polozky = anomalie.slice(0, max).map(a =>
-        `<li>${escapeHtml(a.label)}: ${fmtDatum(a.od)} → ${fmtDatum(a.do)}, pokles o ${fmtNum(Math.abs(a.spotreba))} ${escapeHtml(a.jednotka)}</li>`
-    ).join('');
-    const dalsi = anomalie.length > max ? `<li>… a dalších ${anomalie.length - max}</li>` : '';
-    box.innerHTML = `
-        <p class="font-medium mb-1">Stav měřiče klesl bez označené výměny:</p>
-        <ul class="list-disc pl-5 space-y-0.5">${polozky}${dalsi}</ul>
-        <p class="mt-2">Zkontrolujte odečty v přehledu, případně u novějšího odečtu označte výměnu měřiče v editaci.</p>
-    `;
-    box.classList.remove('hidden');
-}
-
-function createMainChart() {
-    try {
-        if (typeof Chart === 'undefined' || !chartData || chartData.popisky.length === 0) return;
-
-        const ctx = document.getElementById('main-chart').getContext('2d');
-        if (mainChart) mainChart.destroy();
-
-        const dark = isDark();
-        const textColor = dark ? '#e5e7eb' : '#374151';
-        const gridColor = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-        const pozadi = dark ? '#1f2937' : '#fff';
-
-        const datasets = METERS.map(meter => {
-            const rada = chartData.rady[meter.key];
-            const odhad = rada.odhad;
-            return {
-                label: `${rada.label} (${rada.jednotka})`,
-                meterKey: meter.key,
-                data: rada.hodnoty,
-                yAxisID: rada.osa === 'm3' ? 'yM3' : 'yKwh',
-                backgroundColor: c => rgba(rada.barva, odhad[c.dataIndex] ? 0.2 : 0.5),
-                borderColor: rada.barva,
-                borderWidth: 2,
-                pointBackgroundColor: c => (odhad[c.dataIndex] ? pozadi : rada.barva),
-                pointBorderColor: rada.barva,
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                segment: {
-                    borderDash: s => (odhad[s.p0DataIndex] || odhad[s.p1DataIndex] ? [6, 4] : undefined)
-                },
-                tension: 0.1,
-                spanGaps: false,
-                hidden: !datasetVisibility[meter.key]
-            };
-        });
-
-        // U měsíční spotřeby začínají obě osy od nuly, jinak by záporná anomálie posunula
-        // nulu jedné osy a sloupce kWh a m³ by neměly společný základ
-        const osa = (text, position, mrizka) => ({
-            type: 'linear',
-            position,
-            display: 'auto',
-            ...(dataMode === 'diff' ? { min: 0 } : {}),
-            title: { display: true, text, font: { size: 12, weight: 'bold' }, color: textColor },
-            ticks: { font: { size: 10 }, color: textColor },
-            grid: { color: gridColor, drawOnChartArea: mrizka }
-        });
-
-        mainChart = new Chart(ctx, {
-            type: chartType,
-            data: { labels: chartData.popisky, datasets },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: dataMode === 'diff' ? 'Měsíční spotřeba energií' : 'Celkové stavy měřičů',
-                        font: { size: 18, weight: 'bold' },
-                        color: textColor,
-                        padding: { top: 10, bottom: 20 }
-                    },
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: { usePointStyle: true, padding: 20, font: { size: 12 }, color: textColor },
-                        onClick: (e, item) => toggleDataset(METERS[item.datasetIndex].key)
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: dark ? 'rgba(30,41,59,0.95)' : 'rgba(0,0,0,0.8)',
-                        borderColor: dark ? '#475569' : '#ddd',
-                        borderWidth: 1,
-                        cornerRadius: 6,
-                        callbacks: {
-                            title: items => (items.length ? chartData.popisky_dlouhe[items[0].dataIndex] : ''),
-                            label: item => {
-                                const rada = chartData.rady[item.dataset.meterKey];
-                                const odhad = rada.odhad[item.dataIndex] ? ' (odhad)' : '';
-                                return `${rada.label}: ${fmtNum(item.parsed.y)} ${rada.jednotka}${odhad}`;
-                            },
-                            // Měřiče bez hodnoty v daném bodě s důvodem (výměna měřiče, bez údajů)
-                            footer: items => {
-                                if (!items.length) return '';
-                                const index = items[0].dataIndex;
-                                return METERS
-                                    .filter(m => datasetVisibility[m.key] && chartData.rady[m.key].hodnoty[index] === null)
-                                    .map(m => `${chartData.rady[m.key].label}: ${chartData.rady[m.key].poznamka[index] || 'bez údajů'}`);
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        title: { display: true, text: dataMode === 'diff' ? 'Měsíc' : 'Datum záznamu', font: { size: 12, weight: 'bold' }, color: textColor },
-                        ticks: { maxRotation: 45, minRotation: 45, font: { size: 10 }, color: textColor },
-                        grid: { color: gridColor }
-                    },
-                    yKwh: osa('kWh', 'left', true),
-                    yM3: osa('m³', 'right', false)
-                },
-                interaction: { mode: 'index', intersect: false },
-                animation: { duration: 400, easing: 'easeOutQuart' }
-            }
-        });
-    } catch (error) {
-        console.error('Chyba při vytváření grafu:', error);
-    }
-}
-
-function toggleDataset(key) {
-    datasetVisibility[key] = !datasetVisibility[key];
-    const checkbox = document.getElementById(`toggle-${key}`);
-    if (checkbox) checkbox.checked = datasetVisibility[key];
-    updateToggleAllText();
-    if (mainChart) {
-        mainChart.setDatasetVisibility(METERS.findIndex(m => m.key === key), datasetVisibility[key]);
-        mainChart.update();
-    }
-}
-
-function toggleAllDatasets() {
-    const newState = !Object.values(datasetVisibility).every(v => v);
-    METERS.forEach((meter, index) => {
-        datasetVisibility[meter.key] = newState;
-        const checkbox = document.getElementById(`toggle-${meter.key}`);
-        if (checkbox) checkbox.checked = newState;
-        if (mainChart) mainChart.setDatasetVisibility(index, newState);
-    });
-    updateToggleAllText();
-    if (mainChart) mainChart.update();
-}
-
-function changeDataMode(mode) {
-    if (dataMode === mode) return;
-    dataMode = mode;
-    updateModeButtons();
-    // Pro měsíční spotřebu je vhodnější sloupcový graf, pro stavy čárový
-    chartType = mode === 'diff' ? 'bar' : 'line';
-    document.getElementById('chart-type-text').textContent = chartType === 'bar' ? 'Sloupcový graf' : 'Čárový graf';
-    loadChartData();
-}
-
-function toggleChartType() {
-    chartType = chartType === 'bar' ? 'line' : 'bar';
-    document.getElementById('chart-type-text').textContent = chartType === 'bar' ? 'Sloupcový graf' : 'Čárový graf';
-    createMainChart();
-}
-
-function changePeriod(period) {
-    if (currentPeriod === period) return;
-    currentPeriod = period;
-    updatePeriodButtons();
-    loadChartData();
-}
-
-// --- Meziroční porovnání ---
-
-async function loadYoYData() {
-    const container = document.getElementById('yoy-container');
-    try {
-        const data = await apiFetch('/api/grafy/yoy');
-        const roky = data.roky || [];
-
-        if (roky.length === 0) {
-            container.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400 py-4">Nedostatek dat pro meziroční porovnání.</p>';
-            return;
-        }
-
-        const barvy = {
-            lepsi: 'text-green-600 dark:text-green-400',
-            horsi: 'text-red-600 dark:text-red-400',
-            stejne: 'text-gray-500 dark:text-gray-400'
-        };
-
-        const bunka = (rok, meter) => {
-            const hodnota = rok.merice[meter.key];
-            if (hodnota.hodnota === null) {
-                return '<span class="text-gray-400 dark:text-gray-500">–</span>';
-            }
-            const neuplne = hodnota.uplne ? '' : ` title="Neúplné: pokryto ${hodnota.pokryto_dni} z ${rok.dni} dní"`;
-            let html = `<span${neuplne}>${hodnota.odhad ? '≈ ' : ''}${fmtNum(hodnota.hodnota)}${hodnota.uplne ? '' : ' *'}</span>`;
-            const s = hodnota.srovnani;
-            if (s) {
-                const sipka = s.rozdil > 0 ? '↑' : (s.rozdil < 0 ? '↓' : '=');
-                const procenta = s.rozdil_pct === null ? '' : ` (${fmtNum(Math.abs(s.rozdil_pct), 1)} %)`;
-                html += `<span class="${barvy[s.hodnoceni]} text-xs font-medium">${sipka} ${fmtNum(Math.abs(s.rozdil))} ${escapeHtml(meter.jednotka)}${procenta}</span>`;
-            }
-            return html;
-        };
-
-        let html = `
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Rok</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Období</th>
-                        ${METERS.map(m => `<th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">${escapeHtml(m.kratky)} (${escapeHtml(m.jednotka)})</th>`).join('')}
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">`;
-
-        for (const rok of roky) {
-            const obdobi = rok.uplny_rok ? 'celý rok' : `${fmtDen(rok.od)} – ${fmtDen(rok.do)}`;
-            const srovnani = METERS.map(m => rok.merice[m.key].srovnani).find(Boolean);
-            const vs = srovnani && !rok.uplny_rok
-                ? `<span class="block text-xs text-gray-500 dark:text-gray-400">srovnáno s ${fmtDen(srovnani.od)} – ${fmtDen(srovnani.do)} ${Number(rok.rok) - 1}</span>`
-                : '';
-            html += `
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td class="px-4 py-3 text-sm font-bold text-gray-900 dark:text-white">${Number(rok.rok)}</td>
-                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">${obdobi}${vs}</td>
-                    ${METERS.map(m => `
-                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                        <div class="flex flex-col gap-0.5">${bunka(rok, m)}</div>
-                    </td>`).join('')}
-                </tr>`;
-        }
-
-        html += `</tbody></table></div>
-            <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                Šipka ukazuje rozdíl oproti stejnému období předchozího roku (zelená = lepší, u FVE vyšší výroba).
-                ≈ část roku je dopočtená z delšího intervalu bez odečtu. * neúplné období (výměna měřiče nebo chybějící údaje) – bez srovnání.
-            </p>`;
-        container.innerHTML = html;
-    } catch (error) {
-        container.innerHTML = `<p class="text-center text-red-500 py-4">Chyba při načítání meziročního porovnání: ${escapeHtml(error.message)}</p>`;
-    }
-}
-
-// --- Obsluha ovládacích prvků ---
-
-document.querySelectorAll('[data-toggle-meter]').forEach(checkbox => {
-    checkbox.addEventListener('change', () => toggleDataset(checkbox.dataset.toggleMeter));
-});
-document.querySelectorAll('[data-mode]').forEach(button => {
-    button.addEventListener('click', () => changeDataMode(button.dataset.mode));
-});
-document.querySelectorAll('[data-period]').forEach(button => {
-    button.addEventListener('click', () => changePeriod(button.dataset.period));
-});
-document.getElementById('chart-type-btn').addEventListener('click', toggleChartType);
-document.getElementById('toggle-all-btn').addEventListener('click', toggleAllDatasets);
-
-window.addEventListener('darkmodechange', function() {
-    if (mainChart && chartData) createMainChart();
-});
-
-updateModeButtons();
-updatePeriodButtons();
-
-document.addEventListener('DOMContentLoaded', function() {
-    waitForChart();
-    loadYoYData();
-});
-</script>
+</details>
 {% endblock %}

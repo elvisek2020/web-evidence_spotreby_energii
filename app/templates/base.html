@@ -1,105 +1,96 @@
+{% from "_icons.html" import icon %}
+{%- set navigace = [
+    ('prehled', '/', 'Přehled', 'list'),
+    ('evidovat', '/evidovat', 'Evidovat', 'plus'),
+    ('grafy', '/grafy', 'Grafy', 'chart'),
+    ('chybejici', '/missing-data', 'Chybějící data', 'calendar'),
+] -%}
 <!DOCTYPE html>
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ APP_TITLE }}{% endblock %}</title>
-
-    <link rel="preconnect" href="https://cdn.tailwindcss.com">
-
-    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-    <script>tailwind.config = { darkMode: 'class' }</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/app.css?v={{ app_version }}">
     <script>
-        if (localStorage.getItem('darkMode') === 'true' ||
-            (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        }
+        // Zvolený motiv nastavit ještě před vykreslením (jinak stránka blikne).
+        try {
+            var t = localStorage.getItem('theme');
+            if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
     </script>
-    <link rel="stylesheet" href="/static/css/style.css?v={{ APP_VERSION }}">
-
+    <script src="/static/js/app.js?v={{ app_version }}" defer></script>
     {% block head %}{% endblock %}
 </head>
-<body class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-    <!-- Skip link -->
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-lg z-50">
-        Přejít na obsah
-    </a>
+<body class="has-tabbar">
+    <script>
+        try {
+            if (localStorage.getItem('layout-wide') === '1') document.body.classList.add('layout-wide');
+        } catch (e) {}
+    </script>
 
-    {% set navigace = [
-        ('/', 'Přehled', ['M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z', 'M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z']),
-        ('/evidovat', 'Evidovat', ['M12 6v6m0 0v6m0-6h6m-6 0H6']),
-        ('/grafy', 'Grafy', ['M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z']),
-        ('/missing-data', 'Chybějící data', ['M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z']),
-    ] %}
+    <header class="header">
+        <div class="header-inner">
+            <div class="header-left">
+                <a href="/" class="logo" title="{{ app_name }}">
+                    <span class="logo-mark">{{ icon('zap', 20) }}</span>
+                    <span>{{ app_name }}</span>
+                </a>
+                <nav class="nav" aria-label="Hlavní navigace">
+                    {% for tab, cesta, nazev, ikona in navigace %}
+                    <a href="{{ cesta }}" class="nav-item {% if current_tab == tab %}nav-item--active{% endif %}"
+                       {%- if current_tab == tab %} aria-current="page"{% endif %}>{{ icon(ikona, 18) }}{{ nazev }}</a>
+                    {% endfor %}
+                </nav>
+            </div>
+        </div>
+    </header>
 
-    <div class="w-full">
-        <div class="min-h-screen">
-            <div class="px-4 sm:px-6 lg:px-12 xl:px-20 2xl:px-[200px] py-8">
-                <!-- Hlavní nadpis a navigace na společném řádku -->
-                <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <!-- Hlavní nadpis -->
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                            <a href="/" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{{ APP_TITLE }}</a>
-                        </h1>
-                        <p class="text-gray-600 dark:text-gray-400">Sledování spotřeby energií (elektřina, plyn, voda) a výroby FVE</p>
-                    </div>
+    <nav class="tabbar" aria-label="Hlavní navigace">
+        {% for tab, cesta, nazev, ikona in navigace %}
+        <a href="{{ cesta }}" class="tabbar-item {% if current_tab == tab %}is-active{% endif %}"
+           {%- if current_tab == tab %} aria-current="page"{% endif %}>{{ icon(ikona, 22) }}{{ nazev }}</a>
+        {% endfor %}
+    </nav>
 
-                    <!-- Navigace + dark mode toggle -->
-                    <div class="flex items-center gap-4">
-                        <nav aria-label="Hlavní navigace">
-                            <div class="flex flex-wrap gap-4">
-                            {% for cesta, nazev, ikona in navigace %}
-                                {% set aktivni = request.url.path == cesta %}
-                                <a href="{{ cesta }}" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 {% if aktivni %}bg-blue-600 text-white{% else %}bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600{% endif %}"{% if aktivni %} aria-current="page"{% endif %}>
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                        {% for d in ikona %}<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ d }}"/>{% endfor %}
-                                    </svg>
-                                    {{ nazev }}
-                                </a>
-                            {% endfor %}
-                            </div>
-                        </nav>
+    <main class="main-content">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
 
-                        <!-- Dark mode toggle -->
-                        <button id="dark-mode-toggle" type="button" class="p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors" aria-label="Přepnout tmavý/světlý režim">
-                            <svg class="w-5 h-5 text-gray-700 dark:text-gray-300 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-                            </svg>
-                            <svg class="w-5 h-5 text-gray-700 dark:text-gray-300 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
+    <footer class="footer">
+        <div class="container footer-inner">
+            <p>{{ app_name }} · verze {{ app_version }}</p>
 
-                <!-- Hlavní obsah -->
-                <main id="main-content">
-                    {% block content %}{% endblock %}
-                </main>
+            <div class="theme-switch" role="group" aria-label="Motiv stránky">
+                <button type="button" class="theme-option" data-theme-option="auto">{{ icon('settings', 14) }}<span>Systém</span></button>
+                <button type="button" class="theme-option" data-theme-option="light">{{ icon('sun', 14) }}<span>Světlý</span></button>
+                <button type="button" class="theme-option" data-theme-option="dark">{{ icon('moon', 14) }}<span>Tmavý</span></button>
+            </div>
 
-                <!-- Patička s verzí -->
-                <footer class="mt-12 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <p class="text-center text-xs text-gray-400 dark:text-gray-500">
-                        Verze {{ APP_VERSION }}
-                    </p>
-                </footer>
+            <button type="button" class="theme-option footer-toggle" id="layout-wide-toggle"
+                    title="Širší stránka na velkém monitoru" aria-pressed="false">{{ icon('expand', 14) }}<span>Široká stránka</span></button>
+        </div>
+    </footer>
+
+    <div id="notification-toast" class="toast-container" aria-live="polite"></div>
+
+    <div id="confirm-overlay" class="modal-overlay" role="dialog" aria-modal="true"
+         aria-labelledby="confirm-title" style="display:none">
+        <div class="modal">
+            <div class="modal-header"><div id="confirm-title" class="modal-title"></div></div>
+            <div class="modal-body"><p id="confirm-message"></p></div>
+            <div class="modal-footer">
+                <button id="confirm-cancel" type="button" class="btn btn-outline" onclick="closeConfirm()">Zrušit</button>
+                <button id="confirm-ok" type="button" class="btn btn-primary"></button>
             </div>
         </div>
     </div>
 
-    <!-- Toast notifikace -->
-    <div id="toast-container" class="fixed top-4 right-4 z-[60] space-y-2" aria-live="polite"></div>
-
-    <!-- JavaScript -->
-    <script src="/static/js/app.js?v={{ APP_VERSION }}"></script>
-    <script>
-        document.getElementById('dark-mode-toggle').addEventListener('click', function() {
-            const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('darkMode', isDark);
-            window.dispatchEvent(new CustomEvent('darkmodechange', { detail: { dark: isDark } }));
-        });
-    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

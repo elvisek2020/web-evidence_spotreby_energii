@@ -1,0 +1,78 @@
+{#- Formulář odečtu pro nový záznam i úpravu (proměnná zaznam je None u nového) -#}
+{% from "_icons.html" import icon %}
+{% from "_macros.html" import alert, pole_merice %}
+
+<form method="post" action="{{ '/edit/' ~ zaznam.id if zaznam else '/evidovat' }}" data-save-shortcut data-submit-once>
+    {#- Výchozí tlačítko pro Enter: běžné uložení, nikdy volba z varování níže -#}
+    <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true">Uložit</button>
+
+    {% if chyby %}
+        {% call alert('error') %}
+            <strong>Záznam se nepodařilo uložit.</strong>
+            <ul>{% for chyba in chyby %}<li>{{ chyba }}</li>{% endfor %}</ul>
+        {% endcall %}
+    {% endif %}
+
+    {% if duplicita is defined %}
+        {% call alert('error') %}
+            Pro toto datum už záznam existuje.
+            {% if duplicita %}<a href="/edit/{{ duplicita }}">Otevřít existující záznam</a>{% endif %}
+        {% endcall %}
+    {% endif %}
+
+    {% if varovani %}
+        {% call alert('warn') %}
+            <strong>Zkontrolujte odečet</strong>
+            <ul>{% for text in varovani %}<li>{{ text }}</li>{% endfor %}</ul>
+            {% if pokles %}<p>Pokud byl měřič vyměněn, uložte odečet jako výměnu – rozdíl se pak nezapočítá jako spotřeba.</p>{% endif %}
+            <p class="text-sm mt-2">Nebo hodnoty opravte a uložte znovu.</p>
+            <div class="alert-actions">
+                <button type="submit" name="potvrzeni" value="presto" class="btn btn-outline btn-sm">Uložit přesto</button>
+                {% if pokles %}
+                <button type="submit" name="potvrzeni" value="vymena" class="btn btn-outline btn-sm">Uložit jako výměnu měřiče</button>
+                {% endif %}
+            </div>
+        {% endcall %}
+    {% endif %}
+
+    <section class="card">
+        <div class="card-body">
+            <div class="form-grid">
+                <div class="form-group span-2">
+                    <label class="form-label" for="datum">Datum odečtu</label>
+                    <input class="input" type="date" id="datum" name="datum" value="{{ hodnoty.get('datum', '') }}" max="{{ today }}" required>
+                </div>
+                {% for meter in METERS %}
+                    {{ pole_merice(meter, hodnoty.get(meter.key), napovedy.get(meter.key)) }}
+                {% endfor %}
+            </div>
+
+            {% if zaznam %}
+            <div class="form-group mt-4">
+                <span class="form-label">Typ záznamu</span>
+                <label class="check-row">
+                    <input type="checkbox" name="source" value="1" {% if hodnoty.get('source') == '1' %}checked{% endif %}>
+                    <span>Automaticky doplněný odhad</span>
+                </label>
+            </div>
+
+            <fieldset class="form-group">
+                <legend class="form-label">Výměna měřiče u tohoto odečtu</legend>
+                <div class="form-grid">
+                    {% for meter in METERS %}
+                    <label class="check-row">
+                        <input type="checkbox" name="{{ meter.flag }}" value="1" {% if hodnoty.get(meter.flag) == '1' %}checked{% endif %}>
+                        <span>{{ meter.label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <p class="form-hint">Označte měřič, který byl u tohoto odečtu nově nasazený. Rozdíl oproti předchozímu záznamu se pak nezapočítá jako spotřeba.</p>
+            </fieldset>
+            {% endif %}
+        </div>
+        <div class="card-footer">
+            <a href="/" class="btn btn-ghost">Zrušit</a>
+            <button type="submit" class="btn btn-primary">{{ icon('check', 18) }}{{ 'Uložit změny' if zaznam else 'Uložit odečet' }}</button>
+        </div>
+    </section>
+</form>

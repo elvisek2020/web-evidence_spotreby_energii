@@ -1,0 +1,61 @@
+{#- Sdílená makra šablon; měřiče se procházejí z METERS (app/meters.py) -#}
+{%- from "_icons.html" import icon -%}
+
+{%- macro alert(typ, text=none) -%}
+{%- set ikony = {'success': 'check-circle', 'error': 'x-circle', 'warn': 'alert', 'info': 'info'} -%}
+<div class="alert alert--{{ typ }}" role="{{ 'alert' if typ == 'error' else 'status' }}">
+    {{ icon(ikony[typ], 20) }}
+    <div class="alert-body">{% if caller %}{{ caller() }}{% else %}{{ text }}{% endif %}</div>
+</div>
+{%- endmacro -%}
+
+{%- macro empty_state(ikona, nadpis, text) -%}
+<div class="empty-state">
+    <div class="empty-state-icon">{{ icon(ikona, 32) }}</div>
+    <h2 class="empty-state-title">{{ nadpis }}</h2>
+    <p class="empty-state-text">{{ text }}</p>
+    {% if caller %}<div class="cluster">{{ caller() }}</div>{% endif %}
+</div>
+{%- endmacro -%}
+
+{#- Pole stavu měřiče ve formuláři odečtu -#}
+{%- macro pole_merice(meter, hodnota, napoveda=none) -%}
+<div class="form-group">
+    <label class="form-label" for="{{ meter.key }}">{{ meter.label }} ({{ meter.jednotka }})</label>
+    <input class="input" type="number" id="{{ meter.key }}" name="{{ meter.key }}" value="{{ hodnota or '' }}"
+           required min="0" max="9999999.99" step="0.01" inputmode="decimal"
+           {%- if napoveda %} aria-describedby="{{ meter.key }}-napoveda"{% endif %}>
+    {% if napoveda %}<p class="form-hint" id="{{ meter.key }}-napoveda">{{ napoveda }}</p>{% endif %}
+</div>
+{%- endmacro -%}
+
+{#- Rozdíl oproti předchozímu záznamu, nebo informace o výměně měřiče -#}
+{%- macro rozdil(stav) -%}
+{%- if stav.vymena -%}
+<span class="rozdil rozdil--vymena">výměna</span>
+{%- elif stav.rozdil is not none -%}
+<span class="rozdil{% if stav.rozdil < 0 %} rozdil--zaporny{% endif %}">{% if stav.rozdil >= 0 %}+{% endif %}{{ stav.rozdil|cislo_cz(0) }}</span>
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro strankovani(strana, stran, stranky, parametry='') -%}
+{%- if stran > 1 -%}
+<nav class="cluster" aria-label="Stránkování">
+    {% if strana > 1 %}
+    <a class="btn btn-outline btn-sm btn-icon" href="?strana={{ strana - 1 }}{{ parametry }}" aria-label="Předchozí stránka" title="Předchozí stránka">{{ icon('chevron-left', 18) }}</a>
+    {% endif %}
+    {% for cislo_strany in stranky %}
+        {% if cislo_strany is none %}
+        <span class="text-muted" aria-hidden="true">…</span>
+        {% elif cislo_strany == strana %}
+        <span class="btn btn-secondary btn-sm" aria-current="page">{{ cislo_strany }}</span>
+        {% else %}
+        <a class="btn btn-outline btn-sm" href="?strana={{ cislo_strany }}{{ parametry }}">{{ cislo_strany }}</a>
+        {% endif %}
+    {% endfor %}
+    {% if strana < stran %}
+    <a class="btn btn-outline btn-sm btn-icon" href="?strana={{ strana + 1 }}{{ parametry }}" aria-label="Další stránka" title="Další stránka">{{ icon('chevron-right', 18) }}</a>
+    {% endif %}
+</nav>
+{%- endif -%}
+{%- endmacro -%}

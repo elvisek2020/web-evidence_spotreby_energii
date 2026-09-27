@@ -1,7 +1,8 @@
 import logging
+from contextlib import contextmanager
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -15,23 +16,28 @@ from ..schemas import (
     SpotrebaResponse,
 )
 from ..services import vypocty
-from ..services.zaznamy import aplikuj_zmeny, nacti_vse, najdi_navrh, zaznam_z_navrhu
+from ..services.zaznamy import (
+    DuplicitniDatum,
+    nacti_vse,
+    prepocitej_vsechny_odhady,
+    vytvor_navrh,
+    vytvor_vsechny_navrhy,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-def _commit(db: Session, popis: str) -> None:
+@contextmanager
+def _chyby_ukladani(popis: str):
     try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Záznam pro toto datum již existuje")
-    except SQLAlchemyError:
-        db.rollback()
+        yield
+    except DuplicitniDatum as chyba:
+        raise HTTPException(status_code=400, detail=str(chyba)) from chyba
+    except SQLAlchemyError as chyba:
         logger.exception("Chyba při ukládání: %s", popis)
-        raise HTTPException(status_code=500, detail="Chyba při ukládání do databáze")
+        raise HTTPException(status_code=500, detail="Chyba při ukládání do databáze") from chyba
 
 
 @router.get("/missing-data/suggestions", response_model=list[MissingDataSuggestion])
@@ -44,15 +50,11 @@ def get_missing_data_suggestions(db: Session = Depends(get_db)):
 @router.post("/missing-data/create")
 def create_missing_data_suggestions(db: Session = Depends(get_db)):
     """Vytvoření všech aktuálních návrhů chybějících záznamů"""
-    navrhy, _ = vypocty.navrhy_chybejicich(nacti_vse(db))
-    if not navrhy:
+    with _chyby_ukladani("hromadné vytvoření chybějících záznamů"):
+        pocet = vytvor_vsechny_navrhy(db)
+    if not pocet:
         return {"message": "Žádné chybějící záznamy k doplnění", "created": 0}
 
-    for navrh in navrhy:
-        db.add(zaznam_z_navrhu(navrh))
-    _commit(db, "hromadné vytvoření chybějících záznamů")
-
-    pocet = len(navrhy)
     logger.info("Hromadně vytvořeno %d chybějících záznamů", pocet)
     zprava = tvar(
         pocet,
@@ -70,14 +72,10 @@ def create_single_missing_data(vstup: NavrhVstup, db: Session = Depends(get_db))
     Hodnoty se počítají z aktuálních dat, ne z toho, co poslal prohlížeč - stránka
     s návrhy mohla mezitím zastarat.
     """
-    navrh = najdi_navrh(db, vstup.datum)
-    if navrh is None:
+    with _chyby_ukladani(f"vytvoření chybějícího záznamu pro datum={vstup.datum}"):
+        zaznam = vytvor_navrh(db, vstup.datum)
+    if zaznam is None:
         raise HTTPException(status_code=400, detail="Pro toto datum už návrh neexistuje, obnovte stránku")
-
-    zaznam = zaznam_z_navrhu(navrh)
-    db.add(zaznam)
-    _commit(db, f"vytvoření chybějícího záznamu pro datum={vstup.datum}")
-    db.refresh(zaznam)
 
     logger.info("Vytvořen chybějící záznam id=%s, datum=%s", zaznam.id, zaznam.datum)
     return {
@@ -113,9 +111,8 @@ def prepocet_nahled(db: Session = Depends(get_db)):
 @router.post("/missing-data/prepocet")
 def prepocet_provest(db: Session = Depends(get_db)):
     """Přepočítá všechny uložené odhady podle okolních ručních odečtů"""
-    zmeny, _ = vypocty.prepocet_odhadu(nacti_vse(db))
-    pocet = aplikuj_zmeny(zmeny)
-    _commit(db, "přepočet odhadů")
+    with _chyby_ukladani("přepočet odhadů"):
+        pocet = prepocitej_vsechny_odhady(db)
 
     logger.info("Přepočteno %d odhadů", pocet)
     zprava = tvar(

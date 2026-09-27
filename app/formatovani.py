@@ -19,6 +19,11 @@ def datum_kratke(den: Optional[date]) -> str:
     return f"{den.day}. {den.month}. {den.year}" if den else ""
 
 
+def den_mesic(den: date) -> str:
+    """1. 9. - den a měsíc bez roku"""
+    return f"{den.day}. {den.month}."
+
+
 def mesic_cz(den: date) -> str:
     """září 2026"""
     return f"{MESICE[den.month - 1]} {den.year}"
@@ -27,11 +32,6 @@ def mesic_cz(den: date) -> str:
 def mesic_kratky(den: date) -> str:
     """09/2026 - popisek osy grafu"""
     return f"{den.month:02d}/{den.year}"
-
-
-def cislo(hodnota: Optional[float]) -> str:
-    """Celé číslo pro tabulky"""
-    return "%.0f" % (hodnota or 0)
 
 
 def cislo_input(hodnota: Optional[float]) -> str:
@@ -61,6 +61,11 @@ def tvar(pocet: int, jeden: str, dva_az_ctyri: str, pet_a_vice: str) -> str:
     if 2 <= pocet <= 4:
         return dva_az_ctyri
     return pet_a_vice
+
+
+def pocet(pocet: int, jeden: str, dva_az_ctyri: str, pet_a_vice: str) -> str:
+    """Číslo se slovem ve správném tvaru: 1 odečet, 3 odečty, 31 odečtů"""
+    return f"{pocet} {tvar(pocet, jeden, dva_az_ctyri, pet_a_vice)}"
 
 
 def pocet_dni(pocet: int) -> str:

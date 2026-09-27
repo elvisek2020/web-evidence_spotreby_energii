@@ -12,11 +12,10 @@ from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .database import DB_DATABASE, engine
-from .formatovani import cislo_cz
-from .meters import METERS
 from .migrations import ensure_schema
 from .routers import grafy, missing_data, pages, spotreba
 from .templating import APP_TITLE, APP_VERSION, STATIC_DIR, templates
+from .validace import popis_chyb
 
 logging.basicConfig(
     level=getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), logging.INFO),
@@ -74,52 +73,20 @@ app.include_router(pages.router)
 
 # --- Chyby: JSON pro API, HTML stránka pro prohlížeč ------------------------------
 
-_POPISKY_POLI = {"datum": "Datum", **{meter.key: meter.label for meter in METERS}}
-
-
 def _je_api(request: Request) -> bool:
     return request.url.path.startswith(("/api/", "/static/"))
 
 
-def _popis_chyby(chyba: dict) -> str:
-    """Česká hláška z jedné chyby validace"""
-    typ = chyba.get("type", "")
-    ctx = chyba.get("ctx") or {}
-    if typ == "missing":
-        zprava = "pole je povinné"
-    elif typ == "greater_than_equal":
-        zprava = f"hodnota musí být alespoň {cislo_cz(ctx.get('ge', 0))}"
-    elif typ == "less_than_equal":
-        zprava = f"hodnota může být nejvýše {cislo_cz(ctx.get('le', 0))}"
-    elif typ.startswith(("float", "int", "finite")):
-        zprava = "zadejte číslo"
-    elif typ.startswith("date"):
-        zprava = "zadejte platné datum"
-    elif typ.startswith("bool"):
-        zprava = "neplatná hodnota"
-    elif typ == "json_invalid":
-        zprava = "neplatný formát požadavku"
-    elif typ == "value_error":
-        zprava = str(chyba.get("msg", "")).removeprefix("Value error, ")
-    else:
-        zprava = str(chyba.get("msg", "neplatná hodnota"))
-
-    pole = next(
-        (str(cast) for cast in reversed(chyba.get("loc", ())) if isinstance(cast, str) and cast not in ("body", "query", "path")),
-        None,
-    )
-    return f"{_POPISKY_POLI.get(pole, pole)}: {zprava}" if pole else zprava
-
-
 def _chybova_stranka(request: Request, status: int, nadpis: str, zprava: str):
     return templates.TemplateResponse(
-        request, "chyba.html", {"status": status, "nadpis": nadpis, "zprava": zprava}, status_code=status
+        request, "chyba.html", {"status": status, "nadpis": nadpis, "zprava": zprava, "current_tab": None},
+        status_code=status,
     )
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    zprava = "; ".join(dict.fromkeys(_popis_chyby(chyba) for chyba in exc.errors()))
+    zprava = "; ".join(popis_chyb(exc.errors()))
     if _je_api(request):
         return JSONResponse(status_code=422, content={"detail": zprava})
     return _chybova_stranka(request, 400, "Neplatný požadavek", zprava)

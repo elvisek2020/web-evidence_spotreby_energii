@@ -1,185 +1,164 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_macros.html" import alert, empty_state %}
 
-{% block title %}{{ APP_TITLE }} - Chybějící data{% endblock %}
+{% block title %}Chybějící data — {{ app_name }}{% endblock %}
+
+{% macro tlacitko_vytvorit(navrh) %}
+<form method="post" action="/missing-data/vytvorit" data-submit-once>
+    <input type="hidden" name="datum" value="{{ navrh.datum.isoformat() }}">
+    <button type="submit" class="btn btn-outline btn-sm">{{ icon('plus', 16) }}Vytvořit</button>
+</form>
+{% endmacro %}
 
 {% block content %}
-<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
-    <div class="mb-6">
-        <p class="text-gray-600 dark:text-gray-400 mb-6 text-center">
-            Systém hledá kalendářní měsíce bez odečtu a navrhuje pro ně odhad podle okolních ručních odečtů.
-            Navržené záznamy budou označeny jako automaticky doplněné.
-        </p>
+<div class="page-header">
+    <div class="page-header-text">
+        <h1 class="page-title">Chybějící data</h1>
+        <p class="page-description">Odhady pro kalendářní měsíce bez odečtu a kontrola uložených odhadů</p>
+    </div>
+    {% if navrhy %}
+    <div class="page-header-actions">
+        <form method="post" action="/missing-data/vytvorit-vse" data-submit-once
+              data-confirm="Vytvoří se {{ navrhy|length|pocet('odhad', 'odhady', 'odhadů') }} pro měsíce bez odečtu. Hromadné vytvoření nejde vrátit jedním krokem."
+              data-confirm-title="Vytvořit všechny návrhy?" data-confirm-ok="Vytvořit">
+            <button type="submit" class="btn btn-primary">{{ icon('check', 18) }}Vytvořit všechny návrhy ({{ navrhy|length }})</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
 
-        <div class="flex flex-wrap gap-4 justify-center">
-            <button type="button" id="create-all-btn" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors" {% if not navrhy %}disabled{% endif %}>
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                Vytvořit všechny návrhy{% if navrhy %} ({{ navrhy|length }}){% endif %}
-            </button>
+{% if zprava %}{{ alert(zprava[0], zprava[1]) }}{% endif %}
+
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2 class="card-title">Návrhy odhadů</h2>
+            <p class="card-subtitle">Stavy k 1. dni měsíce, lineárně podle dní mezi okolními ručními odečty</p>
         </div>
     </div>
-
     {% if navrhy %}
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
+    <div class="table-wrap hide-mobile">
+        <table class="table">
+            <thead>
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Datum</th>
-                    {% for meter in METERS %}
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ meter.label }} ({{ meter.jednotka }})</th>
-                    {% endfor %}
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Akce</th>
+                    <th>Datum</th>
+                    {% for meter in METERS %}<th class="num">{{ meter.kratky }} ({{ meter.jednotka }})</th>{% endfor %}
+                    <th><span class="visually-hidden">Akce</span></th>
                 </tr>
             </thead>
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody>
                 {% for navrh in navrhy %}
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ navrh.datum|datum_cz }}</td>
-                    {% for meter in METERS %}
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ "%.2f"|format(navrh.hodnoty[meter.key]) }}</td>
-                    {% endfor %}
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button type="button" data-vytvorit-navrh data-datum="{{ navrh.datum.isoformat() }}" class="inline-flex items-center px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors">
-                            Vytvořit
-                        </button>
-                    </td>
+                <tr>
+                    <td class="nowrap">{{ navrh.datum|datum_cz }}</td>
+                    {% for meter in METERS %}<td class="num">{{ navrh.hodnoty[meter.key]|cislo_cz }}</td>{% endfor %}
+                    <td class="akce">{{ tlacitko_vytvorit(navrh) }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    <ul class="list-rows show-mobile">
+        {% for navrh in navrhy %}
+        <li class="list-row">
+            <span class="list-row-main">
+                <span class="list-row-title">{{ navrh.datum|datum_cz }}</span>
+                <span class="list-row-meta">
+                    {% for meter in METERS %}<span class="nowrap">{{ meter.kratky }} {{ navrh.hodnoty[meter.key]|cislo_cz }}</span>{% if not loop.last %} · {% endif %}{% endfor %}
+                </span>
+            </span>
+            {{ tlacitko_vytvorit(navrh) }}
+        </li>
+        {% endfor %}
+    </ul>
     {% else %}
-    <div class="text-center py-12">
-        <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Žádná chybějící data</h3>
-        <p class="text-gray-600 dark:text-gray-400">Systém nenašel žádné mezery v datech, které by bylo možné doplnit.</p>
-    </div>
+        {{ empty_state('check-circle', 'Žádné měsíce k doplnění', 'Mezi odečty nechybí žádný kalendářní měsíc, který by šlo doplnit odhadem.') }}
     {% endif %}
 
     {% if preskocene %}
-    <div class="mt-6 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-200" role="note">
-        <p class="font-medium mb-1">Mezery, které nejde doplnit automaticky – doplňte je ručně:</p>
-        <ul class="list-disc pl-5 space-y-0.5">
-            {% for mezera in preskocene %}
-            <li>
-                {{ mezera.od|datum_cz }} – {{ mezera.do|datum_cz }}
-                (chybí {% for mesic in mezera.mesice %}{{ mesic|mesic_cz }}{% if not loop.last %}, {% endif %}{% endfor %}):
-                {{ mezera.duvody|join(', ') }}
-            </li>
-            {% endfor %}
-        </ul>
+    <div class="card-body">
+        {% call alert('warn') %}
+            <strong>Mezery, které nejde doplnit automaticky – doplňte je ručně</strong>
+            <ul>
+                {% for mezera in preskocene %}
+                <li>
+                    {{ mezera.od|datum_kratke }} – {{ mezera.do|datum_kratke }}
+                    (chybí {% for mesic in mezera.mesice %}{{ mesic|mesic_cz }}{% if not loop.last %}, {% endif %}{% endfor %}):
+                    {{ mezera.duvody|join(', ') }}
+                </li>
+                {% endfor %}
+            </ul>
+        {% endcall %}
     </div>
     {% endif %}
 </section>
 
-<!-- Kontrola uložených odhadů -->
-<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Kontrola uložených odhadů</h3>
+<section class="card mt-5">
+    <div class="card-header">
+        <div>
+            <h2 class="card-title">Kontrola uložených odhadů</h2>
+            <p class="card-subtitle">Odhady se po změně ručního odečtu přepočítají samy; tady se ukážou starší nesrovnalosti</p>
+        </div>
+    </div>
     {% if zmeny %}
-        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-                {{ pocet_zmenenych }}
-                {% if pocet_zmenenych == 1 %}odhad neodpovídá{% elif pocet_zmenenych < 5 %}odhady neodpovídají{% else %}odhadů neodpovídá{% endif %}
-                aktuálním ručním odečtům (například po opravě odečtu z doby před automatickým přepočtem).
-            </p>
-            <button type="button" id="prepocet-btn" data-pocet="{{ pocet_zmenenych }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors">
-                Přepočítat odhady
-            </button>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Datum odhadu</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Měřič</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Uloženo</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Po přepočtu</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {% for zmena in zmeny %}
-                    <tr>
-                        <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                            <a href="/edit/{{ zmena.zaznam.id }}" class="text-blue-700 dark:text-blue-300 hover:underline">{{ zmena.zaznam.datum|datum_cz }}</a>
-                        </td>
-                        <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ zmena.meter.label }}</td>
-                        <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ "%.2f"|format(zmena.stara or 0) }} {{ zmena.meter.jednotka }}</td>
-                        <td class="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ "%.2f"|format(zmena.nova) }} {{ zmena.meter.jednotka }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Datum odhadu</th>
+                    <th>Měřič</th>
+                    <th class="num">Uloženo</th>
+                    <th class="num">Po přepočtu</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for zmena in zmeny %}
+                <tr>
+                    <td class="nowrap"><a href="/edit/{{ zmena.zaznam.id }}">{{ zmena.zaznam.datum|datum_cz }}</a></td>
+                    <td>{{ zmena.meter.label }}</td>
+                    <td class="num">{{ (zmena.stara or 0)|cislo_cz }} {{ zmena.meter.jednotka }}</td>
+                    <td class="num font-bold">{{ zmena.nova|cislo_cz }} {{ zmena.meter.jednotka }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer">
+        <form method="post" action="/missing-data/prepocet" data-submit-once
+              data-confirm="Uložené hodnoty {{ pocet_zmenenych|pocet('odhadu', 'odhadů', 'odhadů') }} se nahradí dopočtem z okolních ručních odečtů podle tabulky."
+              data-confirm-title="Přepočítat odhady?" data-confirm-ok="Přepočítat">
+            <button type="submit" class="btn btn-primary">{{ icon('refresh', 18) }}Přepočítat odhady</button>
+        </form>
+    </div>
     {% else %}
-        <p class="text-sm text-gray-600 dark:text-gray-400">Všechny uložené odhady odpovídají okolním ručním odečtům.</p>
+    <div class="card-body">
+        <p class="text-muted">Všechny uložené odhady odpovídají okolním ručním odečtům.</p>
+    </div>
     {% endif %}
 
     {% if konflikty %}
-    <div class="mt-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-200" role="note">
-        <p class="font-medium mb-1">Odhady, které přepočet ponechá beze změny:</p>
-        <ul class="list-disc pl-5 space-y-0.5">
-            {% for konflikt in konflikty %}
-            <li><a href="/edit/{{ konflikt.zaznam.id }}" class="underline hover:no-underline">{{ konflikt.zaznam.datum|datum_cz }}</a> – {{ konflikt.popis }}</li>
-            {% endfor %}
-        </ul>
+    <div class="card-body">
+        {% call alert('warn') %}
+            <strong>Odhady, které přepočet ponechá beze změny</strong>
+            <ul>
+                {% for konflikt in konflikty %}
+                <li><a href="/edit/{{ konflikt.zaznam.id }}">{{ konflikt.zaznam.datum|datum_kratke }}</a> – {{ konflikt.popis }}</li>
+                {% endfor %}
+            </ul>
+        {% endcall %}
     </div>
     {% endif %}
 </section>
 
-<!-- Nápověda -->
-<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Nápověda</h3>
-    <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-        <p>• Systém prochází všechny záznamy a hledá kalendářní měsíce bez odečtu; návrh zakládá k 1. dni měsíce</p>
-        <p>• Stavy měřičů dopočítá lineárně podle skutečného odstupu dnů mezi okolními ručními odečty</p>
-        <p>• Mezeru, ve které byl vyměněn měřič, vynechá – stavy na sebe nenavazují a měsíc je potřeba doplnit ručně</p>
-        <p>• Automaticky doplněné záznamy jsou v přehledu označené jako „Odhad“ a grafy se z nich nepočítají</p>
-        <p>• Po opravě, přidání nebo smazání ručního odečtu se odhady v jeho okolí přepočítají samy; kontrola výše odhalí starší nesrovnalosti</p>
+<details class="card mt-5" id="napoveda-chybejici" data-remember-open>
+    <summary class="card-header"><h2 class="card-title">Nápověda</h2></summary>
+    <div class="card-body">
+        <ul class="napoveda">
+            <li>Aplikace hledá kalendářní měsíce bez odečtu a návrh zakládá k 1. dni měsíce.</li>
+            <li>Stavy dopočítá lineárně podle skutečného odstupu dnů mezi okolními ručními odečty.</li>
+            <li>Mezeru, ve které byl vyměněn měřič, vynechá – stavy na sebe nenavazují a měsíc je potřeba doplnit ručně.</li>
+            <li>Doplněné záznamy jsou v přehledu označené jako „Odhad“; grafy se počítají jen z ručních odečtů.</li>
+        </ul>
     </div>
-</section>
-{% endblock %}
-
-{% block scripts %}
-<script>
-async function provest(button, text, url, vychoziZprava) {
-    const odemknout = zamknoutTlacitko(button, text);
-    try {
-        const vysledek = await apiFetch(url, { method: 'POST', json: button.dataset.datum ? { datum: button.dataset.datum } : undefined });
-        flashToast((vysledek && vysledek.message) || vychoziZprava);
-        window.location.reload();
-    } catch (error) {
-        showToast(error.message, 'error');
-        odemknout();
-    }
-}
-
-document.addEventListener('click', function(e) {
-    const btn = e.target.closest('[data-vytvorit-navrh]');
-    if (btn) provest(btn, 'Vytvářím...', '/api/missing-data/create-single', 'Záznam byl úspěšně vytvořen');
-});
-
-document.getElementById('create-all-btn').addEventListener('click', async function() {
-    const confirmed = await showConfirm({
-        title: 'Vytvořit všechny návrhy',
-        message: 'Opravdu chcete vytvořit všechny navržené záznamy? Hromadné vytvoření nelze vrátit zpět.',
-        confirmText: 'Vytvořit'
-    });
-    if (confirmed) provest(this, 'Vytvářím...', '/api/missing-data/create', 'Záznamy byly vytvořeny');
-});
-
-const prepocetBtn = document.getElementById('prepocet-btn');
-if (prepocetBtn) {
-    prepocetBtn.addEventListener('click', async function() {
-        const confirmed = await showConfirm({
-            title: 'Přepočítat odhady',
-            message: `Uložené hodnoty se nahradí dopočtem z okolních ručních odečtů podle tabulky (počet odhadů: ${this.dataset.pocet}). Pokračovat?`,
-            confirmText: 'Přepočítat'
-        });
-        if (confirmed) provest(this, 'Přepočítávám...', '/api/missing-data/prepocet', 'Odhady byly přepočteny');
-    });
-}
-</script>
+</details>
 {% endblock %}

@@ -15,40 +15,42 @@ Aplikace je určená pro domácnost, která chce mít přehled o vývoji spotře
 ## ✨ Funkce
 
 - ✅ **Evidování odečtů** – stavy elektroměru (VT/NT), plynoměru, vodoměru a počítadla FVE s validací; výchozí datum je dnešek, poslední ruční odečet je v polích jen jako nápověda
-- ✅ **Kontrola návaznosti** – když je stav nižší než předchozí ruční odečet (nebo vyšší než následující), aplikace se před uložením zeptá; pokles jde rovnou uložit jako výměnu měřiče
-- ✅ **Přehled** – tabulka s rozdílem oproti předchozímu záznamu (i na konci stránky), stránkování po 15 záznamech, filtr „Zobrazit pouze odečty“, statistiky, upozornění na chybějící odečet v aktuálním měsíci a export do CSV
+- ✅ **Kontrola návaznosti** – když je stav nižší než předchozí ruční odečet (nebo vyšší než následující), formulář se vrátí s varováním; pokles jde rovnou uložit jako výměnu měřiče
+- ✅ **Přehled** – tabulka s rozdílem oproti předchozímu záznamu (i na konci stránky), stránkování po 15 záznamech, filtr „Jen odečty“, počty odečtů a odhadů, upozornění na chybějící odečet v aktuálním měsíci a export do CSV
 - ✅ **Výměna měřiče** – příznak u jednotlivých měřičů; skok stavu se nepočítá jako spotřeba v tabulce, grafech ani meziročním porovnání
-- ✅ **Měsíční spotřeba** – rozpočet do kalendářních měsíců podle dní mezi ručními odečty, dvě osy (kWh a m³), odlišení dopočtených měsíců a upozornění na poklesy stavu bez označené výměny
-- ✅ **Celkové stavy** – průběh stavů měřičů u všech záznamů, odhady jako duté body
+- ✅ **Měsíční spotřeba** – rozpočet do kalendářních měsíců podle dní mezi ručními odečty; samostatné grafy pro elektřinu a FVE (kWh), plyn a vodu (m³), každý s jednou osou, odlišení dopočtených měsíců, tabulka hodnot a upozornění na poklesy stavu bez označené výměny
+- ✅ **Stavy měřičů** – průběh stavů měřičů u všech záznamů, odhady jako duté body
 - ✅ **Meziroční porovnání** – spotřeba po kalendářních letech; rozpracovaný rok se srovnává se stejným obdobím loňska, u FVE je vyšší výroba „lepší“
 - ✅ **Chybějící data** – návrhy odhadů pro měsíce bez odečtu, přehled mezer, které automaticky doplnit nejde, a kontrola uložených odhadů s hromadným přepočtem
 - ✅ **Automatický přepočet odhadů** – po přidání, opravě nebo smazání ručního odečtu se odhady v jeho okolí dopočítají znovu
-- ✅ **Tmavý režim a mobil** – přepínač světlého/tmavého režimu, formuláře se na úzké obrazovce skládají pod sebe
+- ✅ **Jednotný vzhled** – design systém `app.css` (standard web-app-ui, paleta Personal): stejná tlačítka, karty a formuláře na všech stránkách, přepínač motivu Systém / Světlý / Tmavý a široké stránky v zápatí, na mobilu spodní lišta menu a seznam místo tabulky
 
 ## 📖 Použití
 
 ### Základní workflow
 
-1. **Nový odečet** – v záložce „Evidovat“ vyplňte datum a stavy všech měřičů (FVE neevidujete = 0) a uložte tlačítkem nebo Ctrl+S / ⌘S. Když stav nenavazuje na okolní ruční odečty, aplikace ukáže varování s volbami *Zpět k úpravě*, *Uložit přesto* a *Uložit jako výměnu měřiče*.
-2. **Přehled** – na hlavní stránce jsou záznamy od nejnovějšího s rozdíly. Filtr „Zobrazit pouze odečty“ skryje odhady a u rozdílu ukáže délku intervalu. Tlačítkem „Export CSV“ stáhnete všechny záznamy pro Excel.
+1. **Nový odečet** – v záložce „Evidovat“ vyplňte datum a stavy všech měřičů (FVE neevidujete = 0) a uložte tlačítkem nebo Ctrl+S / ⌘S. Když stav nenavazuje na okolní ruční odečty, formulář se vrátí s varováním a volbami *Uložit přesto* a *Uložit jako výměnu měřiče* – nebo hodnoty opravte a uložte znovu.
+2. **Přehled** – na hlavní stránce jsou záznamy od nejnovějšího s rozdíly. Filtr „Jen odečty“ skryje odhady a u rozdílu ukáže délku intervalu. Tlačítkem „Export CSV“ stáhnete všechny záznamy pro Excel.
 3. **Oprava a výměna měřiče** – v editaci záznamu opravíte hodnoty nebo označíte měřič, který byl u odečtu vyměněn (příznak patří na první odečet nového měřiče).
-4. **Grafy** – měsíční spotřeba, celkové stavy, volba období a meziroční porovnání.
+4. **Grafy** – měsíční spotřeba nebo stavy měřičů za zvolené období, tabulka hodnot a meziroční porovnání.
 5. **Chybějící data** – vytvořte odhady pro měsíce bez odečtu a zkontrolujte, že uložené odhady odpovídají odečtům.
 
 ## 🧮 Jak aplikace počítá
 
 Výpočty jsou v jednom modulu `app/services/vypocty.py` (čisté funkce pokryté testy):
 
-- **Ruční odečty vs. odhady** – statistiky (měsíce, roky, anomálie) vycházejí jen z ručních odečtů. Odhady (`source = true`) slouží tabulce a z výpočtů přebírají jen příznak výměny měřiče.
+- **Ruční odečty vs. odhady** – statistiky (měsíce, roky, anomálie) vycházejí jen z ručních odečtů. Uložené odhady (`source = true`) se projeví jen v přehledu (stav a rozdíl u řádku s odhadem) a v exportu CSV, z výpočtů přebírají jen příznak výměny měřiče. Zastaralý odhad tak grafy ani meziroční porovnání nezkreslí.
 - **Rozpočet podle dní** – spotřeba mezi dvěma ručními odečty se rozloží rovnoměrně na dny intervalu `[od, do)` a sečte do kalendářních měsíců a let. Interval 1. 12. → 1. 1. tak patří do prosince.
 - **Úplné měsíce** – v měsíčním grafu je hodnota jen u měsíce, který je pro daný měřič pokrytý celý. Probíhající měsíc se ukáže až po dalším odečtu, období grafu (3 měsíce až 3 roky) se počítá v úplných měsících.
-- **Dopočtené měsíce** – když mezi dvěma ručními odečty leží celý měsíc bez odečtu, je hodnota označená jako odhad (světlejší sloupec, v tabulce let „≈“).
+- **Dopočtené měsíce** – měsíc spočtený z intervalu, ve kterém leží celý kalendářní měsíc bez ručního odečtu, je označený jako dopočtený: v grafu světlejší sloupec, v tabulce hodnot i v meziročním porovnání „≈“. Při řídkých odečtech je takových měsíců většina (viz Známá omezení).
 - **Výměna měřiče** – interval končící odečtem s příznakem výměny není spotřeba. Měsíc, do kterého zasahuje, je u daného měřiče prázdný, a rok s výměnou nejde meziročně srovnat.
 - **FVE** – počítadlo je kumulativní; hodnota 0 znamená „neevidováno“. Ve statistikách se nula přemostí k další nenulové hodnotě, v tabulce rozdíl zůstane prázdný.
 - **Anomálie** – pokles stavu mezi ručními odečty bez příznaku výměny se ze součtů nevyhazuje (překlep se vyruší s dalším nafouknutým intervalem), jen se na něj upozorní pod grafem.
 - **Meziroční porovnání** – rok Y se srovnává se stejným obdobím roku Y−1 (u rozpracovaného roku do stejného dne; 29. 2. se posune na 1. 3.). Srovnání se ukáže jen tehdy, když má měřič pokrytá obě období celá.
 - **Odhady chybějících měsíců** – návrh se zakládá k 1. dni měsíce bez odečtu, hodnoty jsou lineární odhad podle dní mezi okolními ručními odečty. Mezeru s výměnou měřiče (nebo bez navazujícího ručního odečtu) aplikace přeskočí a vypíše s důvodem.
-- **Přepočet odhadů** – po změně ručního odečtu se v jedné transakci přepočítají odhady mezi předchozím a následujícím ručním odečtem. Úprava samotného odhadu přepočet nespouští; při další změně okolních odečtů se ale přepíše. Starší nesrovnalosti ukáže a opraví „Kontrola uložených odhadů“.
+- **Přepočet odhadů** – po změně ručního odečtu se v jedné transakci přepočítají odhady mezi předchozím a následujícím ručním odečtem. Úprava samotného odhadu přepočet nespouští; při další změně okolních odečtů se ale přepíše. Starší nesrovnalosti ukáže a po potvrzení opraví „Kontrola uložených odhadů“ na stránce Chybějící data – typicky odhady z verzí před 31. 8. 2026, které dělily mezeru rovnoměrně podle pořadí měsíce, ne podle dní.
+
+Kromě unit testů jsou výpočty ověřené nezávislým přepočtem nad exportem reálných dat jiným postupem (rozklad spotřeby do jednotlivých dní): měsíce, roční součty, meziroční srovnání i rozdíly v přehledu vyšly bez jediného rozdílu.
 
 ## 🚀 Deployment
 
@@ -115,10 +117,11 @@ Image je veřejný: `ghcr.io/elvisek2020/web-evidence_spotreby_energii`.
 
 ### 🏗️ Architektura
 
-- **Backend** – FastAPI; HTML stránky v `routers/pages.py`, JSON API v `routers/spotreba.py`, `grafy.py` a `missing_data.py`. Routery jsou tenké vrstvy nad službami.
-- **Služby** – `services/vypocty.py` obsahuje čisté výpočty bez DB, `services/zaznamy.py` operace nad databází (načtení, přepočet odhadů v transakci).
-- **Měřiče** – jediná definice v `app/meters.py` (`METERS`: klíč, popisek, jednotka, barva, osa, chování FVE). Šablony, grafy i výpočty je procházejí v cyklu.
-- **Frontend** – serverové vykreslení Jinja2 (přehled, formuláře, chybějící data), vanilla JS v `static/js/app.js` (API volání, modální dialogy, toasty), Chart.js pro grafy, Tailwind CSS přes Play CDN.
+- **Backend** – FastAPI; HTML stránky a jejich formuláře v `routers/pages.py`, JSON API v `routers/spotreba.py`, `grafy.py` a `missing_data.py`. Routery jsou tenké vrstvy nad službami.
+- **Formuláře** – klasické odeslání bez JavaScriptu: POST → přesměrování → GET. Výsledek akce nese adresa jako kód (`?ok=ulozeno&prepocteno=2`) a stránka ho vypíše jako alert; chyby validace a varování kontroly návaznosti vrátí formulář s vyplněnými hodnotami.
+- **Služby** – `services/vypocty.py` obsahuje čisté výpočty bez DB, `services/zaznamy.py` operace nad databází (vytvoření, úprava a smazání záznamu s přepočtem odhadů v jedné transakci), `services/grafy.py` data grafů pro API i stránku.
+- **Měřiče** – jediná definice v `app/meters.py` (`METERS`: klíč, popisek, jednotka, slot barvy řady, graf, chování FVE). Šablony, grafy i výpočty je procházejí v cyklu.
+- **Frontend** – serverové vykreslení Jinja2, design systém `static/css/app.css` podle standardu web-app-ui, `static/js/app.js` podle standardu web-app-interactions (potvrzení `data-confirm`, motiv, šířka stránky) a `static/js/grafy.js` pro Chart.js.
 - **Databáze** – externí MySQL/MariaDB přes SQLAlchemy ORM; schéma spravují migrace při startu.
 
 **Tabulka `spotreba`:**
@@ -137,8 +140,8 @@ Starší instalace mohou mít sloupce měřičů typu `FLOAT` (jednoduchá přes
 
 ### Technický stack
 
-- **Backend:** Python 3.13, FastAPI 0.141, Starlette 1.7, Pydantic 2.13, SQLAlchemy 2.1, PyMySQL, Uvicorn
-- **Frontend:** Jinja2, vanilla JavaScript, Tailwind CSS (Play CDN 3.4), Chart.js 4.5
+- **Backend:** Python 3.13, FastAPI 0.141, Starlette 1.7, Pydantic 2.13, SQLAlchemy 2.1, PyMySQL, python-multipart, Uvicorn
+- **Frontend:** Jinja2, design systém `app.css` (paleta Personal, písma Fraunces a Source Sans 3 z Google Fonts), vanilla JavaScript, Chart.js 4.5
 - **Testy:** pytest
 - **Deployment:** Docker, Docker Compose, GitHub Actions, GHCR
 
@@ -155,17 +158,20 @@ web-evidence_spotreby_energii/
 │   ├── migrations.py        # Úpravy schématu při startu
 │   ├── templating.py        # Jinja2: verze, globální proměnné, filtry
 │   ├── formatovani.py       # České formátování čísel a dat
+│   ├── formulare.py         # Převod polí formuláře, hlášky po akci, návratové adresy
+│   ├── validace.py          # České hlášky chyb validace
 │   ├── services/
 │   │   ├── vypocty.py       # Čisté výpočty (rozdíly, měsíce, roky, odhady, kontroly)
-│   │   └── zaznamy.py       # Operace nad DB (načtení, přepočet odhadů)
+│   │   ├── zaznamy.py       # Operace nad DB (uložení, smazání, přepočet odhadů)
+│   │   └── grafy.py         # Data grafů a meziročního porovnání
 │   ├── routers/
-│   │   ├── pages.py         # HTML stránky
+│   │   ├── pages.py         # HTML stránky a formuláře
 │   │   ├── spotreba.py      # API záznamů, kontrola návaznosti, CSV export
 │   │   ├── grafy.py         # API grafů a meziročního porovnání
 │   │   └── missing_data.py  # API návrhů a přepočtu odhadů
-│   ├── templates/           # Jinja2 šablony (_makra.html = sdílená makra)
-│   └── static/              # style.css, app.js, version.json
-├── tests/test_vypocty.py    # Unit testy výpočetní vrstvy
+│   ├── templates/           # Jinja2 šablony (_icons.html, _macros.html, _formular_odectu.html)
+│   └── static/              # css/app.css, js/app.js, js/grafy.js, version.json
+├── tests/                   # Unit testy výpočtů a formulářů (bez databáze)
 ├── scripts/testovaci_data.py  # Naplnění lokální testovací instance
 ├── docker-compose.yml       # Produkční compose
 ├── docker-compose.test.yml  # Lokální test: aplikace + MariaDB
@@ -179,10 +185,12 @@ web-evidence_spotreby_energii/
 **HTML stránky:**
 
 - `GET /` – přehled (parametry `strana`, `jen_odecty=1`)
-- `GET /evidovat` – nový odečet
-- `GET /edit/{id}` – editace záznamu
-- `GET /grafy` – grafy a meziroční porovnání
+- `GET /evidovat`, `POST /evidovat` – nový odečet (pole formuláře, volitelně `potvrzeni=presto|vymena`)
+- `GET /edit/{id}`, `POST /edit/{id}` – úprava záznamu
+- `POST /smazat/{id}` – smazání (pole `zpet` = návratová adresa v rámci aplikace)
+- `GET /grafy` – grafy a meziroční porovnání (parametry `rezim=mesice|stavy`, `obdobi`)
 - `GET /missing-data` – chybějící data a kontrola odhadů
+- `POST /missing-data/vytvorit` (pole `datum`), `POST /missing-data/vytvorit-vse`, `POST /missing-data/prepocet`
 
 **Záznamy:**
 
@@ -202,7 +210,7 @@ web-evidence_spotreby_energii/
 - `GET /api/grafy/yoy` – roky od nejnovějšího s pokrytím a srovnáním se stejným obdobím loňska
 - `GET /api/grafy/summary` – počty záznamů a rozsah dat
 
-Oba grafové endpointy vracejí stejný tvar `{popisky, popisky_dlouhe, rady: {meric: {label, jednotka, barva, osa, hodnoty, odhad, poznamka}}, anomalie}`. `null` v hodnotách přerušuje řadu, důvod je v `poznamka`. Parametr `period` přijímá `3months`, `6months`, `year`, `2years`, `3years` a `all` (výchozí). U měsíčního grafu znamená počet posledních úplných měsíců, u stavů počet dní zpět.
+Oba grafové endpointy vracejí stejný tvar `{popisky, popisky_dlouhe, rady: {meric: {label, jednotka, hodnoty, odhad, poznamka}}, anomalie}`. `null` v hodnotách přerušuje řadu, důvod je v `poznamka`. Parametr `period` přijímá `3months`, `6months`, `year`, `2years`, `3years` a `all` (výchozí). U měsíčního grafu znamená počet posledních úplných měsíců, u stavů počet dní zpět.
 
 **Chybějící data:**
 
@@ -243,12 +251,28 @@ docker compose -f docker-compose.test.yml down -v
 
 ### 🎨 UI/UX
 
-- Karty s bílým (v tmavém režimu šedým) pozadím, stínem a zaoblenými rohy, Tailwind utility třídy přímo v šablonách
-- Pattern titulku „Evidování spotřeby - Záložka“
-- Potvrzení akcí přes modální dialog (`showConfirm` v `app.js`), výsledky akcí jako toasty, i po přesměrování
-- Opakované části šablon jsou v `templates/_makra.html` (pole měřiče, buňka tabulky, stránkování)
-- `static/css/style.css` obsahuje jen doplňková obyčejná pravidla – Tailwind Play CDN nezpracovává `@apply` v externích souborech
-- Přístupnost: skip link, `aria-current` v navigaci, focus trap v dialogu, respektování `prefers-reduced-motion`
+Vzhled stojí na design systému **web-app-ui**: `app/static/css/app.css` = paleta `theme_personal.css` + základ `reference_app.css` beze změn + na konci sekce doménových tříd aplikace. V šablonách jsou jen třídy z `app.css`, žádné inline styly ani barvy natvrdo; barvy jdou přes tokeny, takže fungují ve světlém i tmavém motivu.
+
+**Tlačítka – stejná pravidla na všech stránkách:**
+
+| Varianta | Kde |
+|----------|-----|
+| `btn btn-primary` | jediná hlavní akce stránky nebo karty – Nový odečet, Uložit odečet, Vytvořit všechny návrhy, Přepočítat odhady |
+| `btn btn-outline` | vedlejší akce – Export CSV, Vytvořit u návrhu, volby ve varování, stránkování |
+| `btn btn-ghost` | zrušení a ikonová tlačítka v řádcích – Zrušit, Upravit, Smazat |
+| `btn btn-danger` / `btn-danger-ghost` | potvrzení smazání v modalu / Smazat záznam v editaci |
+| `btn btn-secondary` | aktuální stránka ve stránkování |
+
+Velikost: akce stránky a karet mají normální výšku (44 px), akce v řádcích, ve varování a ve stránkování `btn-sm`. Filtry jsou `chip`, přepnutí druhu grafu záložky `tabs`.
+
+Zarovnání: tlačítka a skupiny tlačítek jsou vždy **vpravo** – akce v hlavičce stránky (i po zalomení na mobilu), patičky karet, volby ve varování, filtry i stránkování – a hlavní akce je poslední, úplně vpravo, stejně jako v potvrzovacím modalu (Zrušit · Uložit). Pravidlo je v sekci aplikace v `app.css`, takže platí i pro nová tlačítka. Výjimky: záložky druhu grafu (navigace), prázdné stavy (centrované podle standardu) a přepínač motivu v zápatí.
+
+- Stránka = `.page-header` s `h1.page-title` a sekce v `.card`; titulek okna „Stránka — Evidování spotřeby“.
+- Menu: čtyři záložky v hlavičce, na mobilu spodní lišta; aktivní záložku určuje backend (`current_tab`).
+- Potvrzení mazání a hromadných akcí přes `data-confirm` na formuláři; výsledek akce jako alert po přesměrování.
+- Ikony jsou inline SVG z makra `templates/_icons.html`, opakované části v `templates/_macros.html` (alert, prázdný stav, pole měřiče, stránkování).
+- Grafy: každý graf jedna osa a jedna jednotka, barvy řad z validované kategorické palety (tokeny `--color-series-*`), tabulka hodnot jako alternativa ke grafu.
+- Přístupnost: popisky polí, `aria-label` u ikonových tlačítek, `aria-current`, viditelný focus, respektování `prefers-reduced-motion`.
 
 ### 🔒 Bezpečnost
 
@@ -260,17 +284,18 @@ docker compose -f docker-compose.test.yml down -v
 
 ### 🐛 Známá omezení a plánovaná vylepšení
 
-- Tailwind CSS se načítá z Play CDN (kompilace v prohlížeči, závislost na internetu); do budoucna build CSS při sestavení image nebo přechod na `app.css` a HTMX podle standardu `web-app-stack` / `web-app-ui`
+- Chart.js a písma se načítají z CDN (jsdelivr, Google Fonts); bez internetu se použije systémové písmo a místo grafů hláška – hodnoty zůstávají v tabulce
+- Doménové třídy v `app.css` (stránkování přes tlačítka, číselné sloupce, dvousloupcová mřížka grafů, rozbalovací karta) jsou kandidáti na přenos do standardu web-app-ui
 - Starší instalace mohou mít sloupce měřičů `FLOAT` s jednoduchou přesností (u stavů nad ~130 000 šum v setinách); případná změna na `DOUBLE` je ruční `ALTER TABLE`
-- Ručně upravený odhad se při další změně okolních ručních odečtů přepíše – skutečný odečet je potřeba převést na ruční (zrušit „Automaticky doplněný záznam“)
+- Ručně upravený odhad se při další změně okolních ručních odečtů přepíše – skutečný odečet je potřeba převést na ruční (v editaci zrušit „Automaticky doplněný odhad“)
 - Mezeru s výměnou měřiče je potřeba doplnit ručně, automatický návrh ji přeskočí
 - Probíhající měsíc se v měsíčním grafu ukáže až po dalším odečtu
+- Při řídkých odečtech je měsíční spotřeba jen rovnoměrný rozpočet dlouhého intervalu: sezónní průběh (topení plynem, výroba FVE) se vyrovná a měsíce jsou označené „≈“. Stejně se podle dní dělí interval přes přelom roku, což ovlivní roční součty i meziroční srovnání. Přesné měsíce dají odečty jednou měsíčně, nejlépe kolem přelomu měsíce.
 
 ### 📚 Další zdroje
 
 - [FastAPI dokumentace](https://fastapi.tiangolo.com/)
 - [SQLAlchemy dokumentace](https://docs.sqlalchemy.org/)
-- [Tailwind CSS dokumentace](https://tailwindcss.com/docs)
 - [Chart.js dokumentace](https://www.chartjs.org/docs/)
 - [Docker dokumentace](https://docs.docker.com/)
 - [GitHub Actions dokumentace](https://docs.github.com/en/actions)

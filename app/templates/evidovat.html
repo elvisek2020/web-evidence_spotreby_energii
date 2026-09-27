@@ -1,68 +1,27 @@
 {% extends "base.html" %}
-{% from "_makra.html" import pole_merice %}
 
-{% block title %}{{ APP_TITLE }} - Evidovat{% endblock %}
+{% block title %}Nový odečet — {{ app_name }}{% endblock %}
 
 {% block content %}
-<!-- Hlavní boxík pro formulář -->
-<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
-    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Přidat nový záznam spotřeby</h2>
-
-    <form id="evidovat-form" class="max-w-4xl mx-auto" data-save-shortcut>
-        <!-- Datum -->
-        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-6">
-            <label for="datum" class="sm:w-64 text-sm font-medium text-gray-700 dark:text-gray-300 sm:text-right">Datum *</label>
-            <div class="flex-1">
-                <input
-                    type="date"
-                    id="datum"
-                    name="datum"
-                    required
-                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value="{{ today }}"
-                    max="{{ today }}"
-                >
-            </div>
-        </div>
-
-        {% for meter in METERS %}
-            {{ pole_merice(meter, placeholder=placeholdery.get(meter.key)) }}
-        {% endfor %}
-
-        <!-- Tlačítka -->
-        <div class="flex justify-center">
-            <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors shadow-sm">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                Uložit záznam
-            </button>
-        </div>
-    </form>
-</section>
-
-<!-- Nápověda -->
-<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Nápověda</h3>
-    <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-        <p>• Všechna pole označená hvězdičkou (*) jsou povinná, uložit jde i klávesou Ctrl+S (⌘S)</p>
-        <p>• Datum nesmí být v budoucnosti</p>
-        <p>• Hodnoty měřičů musí být nezáporné čísla</p>
-        {% if posledni %}
-        <p>• Šedě je v polích naznačen poslední ruční odečet ({{ posledni.datum|datum_cz }}) – slouží jen jako vodítko, hodnoty je nutné vyplnit</p>
-        {% endif %}
-        <p>• Pokud FVE neevidujete, zadejte do počítadla 0 – výroba se pak za daný měsíc nepočítá</p>
-        <p>• Když je stav nižší než předchozí odečet, aplikace se zeptá, jestli nešlo o výměnu měřiče – rozdíl se pak nezapočítá jako spotřeba</p>
-        <p>• Po uložení se automaticky přepočítají odhady v okolí nového odečtu</p>
+<div class="page-header">
+    <div class="page-header-text">
+        <h1 class="page-title">Nový odečet</h1>
+        <p class="page-description">Zapište stavy všech měřičů k jednomu dni.</p>
     </div>
-</section>
-{% endblock %}
+</div>
 
-{% block scripts %}
-<script>
-document.getElementById('evidovat-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    ulozitOdecet(this, { url: '/api/spotreba', method: 'POST', zprava: 'Záznam byl úspěšně uložen' });
-});
-</script>
+{% include "_formular_odectu.html" %}
+
+<details class="card mt-5" id="napoveda-evidovat" data-remember-open>
+    <summary class="card-header"><h2 class="card-title">Nápověda</h2></summary>
+    <div class="card-body">
+        <ul class="napoveda">
+            <li>Pod každým polem je předchozí ruční odečet – slouží jen jako vodítko.</li>
+            <li>Pokud FVE neevidujete, zadejte do počítadla 0 – výroba se pak za dané období nepočítá.</li>
+            <li>Když je stav nižší než předchozí odečet, aplikace se zeptá, jestli nešlo o výměnu měřiče.</li>
+            <li>Po uložení se automaticky přepočítají odhady v okolí nového odečtu.</li>
+            <li>Uložit jde i klávesou Ctrl+S (⌘S).</li>
+        </ul>
+    </div>
+</details>
 {% endblock %}

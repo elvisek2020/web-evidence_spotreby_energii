@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi.templating import Jinja2Templates
 
 from . import formatovani
-from .meters import METERS
+from .meters import METERS, SKUPINY_GRAFU
 
 logger = logging.getLogger(__name__)
 
@@ -31,19 +31,20 @@ APP_VERSION = _nacti_verzi()
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 templates.env.globals.update(
-    APP_TITLE=APP_TITLE,
-    APP_VERSION=APP_VERSION,
+    app_name=APP_TITLE,
+    app_version=APP_VERSION,
     METERS=METERS,
     METERS_INFO=[meter.jako_slovnik() for meter in METERS],
+    SKUPINY_GRAFU=SKUPINY_GRAFU,
 )
 templates.env.filters.update(
     datum_cz=formatovani.datum_cz,
     datum_kratke=formatovani.datum_kratke,
+    den_mesic=formatovani.den_mesic,
     mesic_cz=formatovani.mesic_cz,
-    mesic_kratky=formatovani.mesic_kratky,
-    cislo=formatovani.cislo,
     cislo_input=formatovani.cislo_input,
     cislo_cz=formatovani.cislo_cz,
+    pocet=formatovani.pocet,
     pocet_dni=formatovani.pocet_dni,
     pred_dny=formatovani.pred_dny,
 )

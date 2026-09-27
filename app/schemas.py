@@ -158,8 +158,6 @@ class MissingDataSuggestion(BaseModel):
 class GrafRada(BaseModel):
     label: str
     jednotka: str
-    barva: str
-    osa: str  # kwh | m3
     hodnoty: list[Optional[float]]
     odhad: list[bool]
     poznamka: list[Optional[str]]

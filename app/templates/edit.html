@@ -1,129 +1,32 @@
 {% extends "base.html" %}
-{% from "_makra.html" import pole_merice %}
+{% from "_icons.html" import icon %}
+{% from "_macros.html" import alert %}
 
-{% block title %}{{ APP_TITLE }} - Upravit{% endblock %}
+{% block title %}Upravit záznam — {{ app_name }}{% endblock %}
 
 {% block content %}
-<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
-    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Upravit záznam spotřeby</h2>
+<a href="/" class="back-link">{{ icon('arrow-left', 16) }}Přehled</a>
 
-    {% if spotreba.source %}
-    <div class="max-w-4xl mx-auto mb-6 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-200" role="note">
-        Tento záznam je automaticky doplněný odhad. Při změně okolních ručních odečtů se jeho hodnoty znovu dopočítají.
-        Pokud jde o skutečný odečet, zrušte zaškrtnutí „Automaticky doplněný záznam“.
+<div class="page-header">
+    <div class="page-header-text">
+        <h1 class="page-title">Upravit záznam</h1>
+        <p class="page-description">
+            Záznam z {{ zaznam.datum|datum_kratke }} · {{ 'automaticky doplněný odhad' if zaznam.source else 'ruční odečet' }}
+        </p>
     </div>
-    {% endif %}
-
-    <form id="edit-form" class="max-w-4xl mx-auto" data-save-shortcut data-record-id="{{ spotreba.id }}">
-        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-6">
-            <label for="datum" class="sm:w-64 text-sm font-medium text-gray-700 dark:text-gray-300 sm:text-right">Datum *</label>
-            <div class="flex-1">
-                <input
-                    type="date"
-                    id="datum"
-                    name="datum"
-                    required
-                    class="w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    max="{{ today }}"
-                    value="{{ spotreba.datum.isoformat() }}"
-                >
-            </div>
-        </div>
-
-        {% for meter in METERS %}
-            {{ pole_merice(meter, hodnota=spotreba[meter.key] or 0) }}
-        {% endfor %}
-
-        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-6">
-            <span class="sm:w-64 text-sm font-medium text-gray-700 dark:text-gray-300 sm:text-right">Typ záznamu</span>
-            <div class="flex-1">
-                <label class="inline-flex items-center">
-                    <input
-                        type="checkbox"
-                        name="source"
-                        value="true"
-                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        {% if spotreba.source %}checked{% endif %}
-                    >
-                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Automaticky doplněný záznam</span>
-                </label>
-            </div>
-        </div>
-
-        <div class="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 mb-6">
-            <span class="sm:w-64 text-sm font-medium text-gray-700 dark:text-gray-300 sm:text-right sm:pt-0.5">Výměna měřiče</span>
-            <div class="flex-1">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {% for meter in METERS %}
-                    <label class="inline-flex items-center">
-                        <input type="checkbox" id="{{ meter.flag }}" data-vymena="{{ meter.key }}" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" {% if spotreba[meter.flag] %}checked{% endif %}>
-                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ meter.label }}</span>
-                    </label>
-                    {% endfor %}
-                </div>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    Označte měřič, který byl u tohoto odečtu vyměněn. Rozdíl oproti předchozímu záznamu se pak nebude počítat jako spotřeba.
-                </p>
-            </div>
-        </div>
-
-        <div class="flex justify-center space-x-4">
-            <a href="/" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 transition-colors">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                </svg>
-                Zpět na přehled
-            </a>
-
-            <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 transition-colors">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                Uložit změny
-            </button>
-        </div>
-    </form>
-</section>
-
-<!-- Informace o záznamu -->
-<section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3 text-center">Informace o záznamu</h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-center">
-        <div>
-            <span class="font-medium text-gray-700 dark:text-gray-300">ID záznamu:</span>
-            <span class="text-gray-600 dark:text-gray-400">{{ spotreba.id }}</span>
-        </div>
-        <div>
-            <span class="font-medium text-gray-700 dark:text-gray-300">Zdroj dat:</span>
-            <span class="text-gray-600 dark:text-gray-400">
-                {% if spotreba.source %}
-                    Automaticky doplněný
-                {% else %}
-                    Manuální
-                {% endif %}
-            </span>
-        </div>
-        {% for meter in METERS %}
-        <div>
-            <span class="font-medium text-gray-700 dark:text-gray-300">{{ meter.label }}:</span>
-            <span class="text-gray-600 dark:text-gray-400">{{ "%.2f"|format(spotreba[meter.key] or 0) }} {{ meter.jednotka }}</span>
-        </div>
-        {% endfor %}
+    <div class="page-header-actions">
+        <form method="post" action="/smazat/{{ zaznam.id }}" data-submit-once
+              data-confirm="Záznam z {{ zaznam.datum|datum_kratke }} bude trvale smazán.{% if not zaznam.source %} Odhady v jeho okolí se přepočítají.{% endif %}"
+              data-confirm-title="Smazat záznam?" data-confirm-ok="Smazat" data-confirm-danger>
+            <input type="hidden" name="zpet" value="/">
+            <button type="submit" class="btn btn-danger-ghost">{{ icon('trash', 18) }}Smazat záznam</button>
+        </form>
     </div>
-</section>
-{% endblock %}
+</div>
 
-{% block scripts %}
-<script>
-document.getElementById('edit-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const recordId = Number(this.dataset.recordId);
-    ulozitOdecet(this, {
-        url: `/api/spotreba/${recordId}`,
-        method: 'PUT',
-        recordId,
-        zprava: 'Záznam byl úspěšně aktualizován'
-    });
-});
-</script>
+{% if zaznam.source %}
+{{ alert('info', 'Tento záznam je automaticky doplněný odhad. Při změně okolních ručních odečtů se jeho hodnoty znovu dopočítají. Pokud jde o skutečný odečet, zrušte zaškrtnutí „Automaticky doplněný odhad“.') }}
+{% endif %}
+
+{% include "_formular_odectu.html" %}
 {% endblock %}
