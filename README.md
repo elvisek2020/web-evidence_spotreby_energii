@@ -18,7 +18,7 @@ Aplikace je určená pro domácnost, která chce mít přehled o vývoji spotře
 - ✅ **Kontrola návaznosti** – když je stav nižší než předchozí ruční odečet (nebo vyšší než následující), formulář se vrátí s varováním; pokles jde rovnou uložit jako výměnu měřiče
 - ✅ **Přehled** – tabulka s rozdílem oproti předchozímu záznamu (i na konci stránky), stránkování po 15 záznamech, filtr „Jen odečty“, počty odečtů a odhadů, upozornění na chybějící odečet v aktuálním měsíci a export do CSV
 - ✅ **Výměna měřiče** – příznak u jednotlivých měřičů; skok stavu se nepočítá jako spotřeba v tabulce, grafech ani meziročním porovnání
-- ✅ **Měsíční spotřeba** – rozpočet do kalendářních měsíců podle dní mezi ručními odečty; samostatné grafy pro elektřinu a FVE (kWh), plyn a vodu (m³), každý s jednou osou, odlišení dopočtených měsíců a tabulka hodnot
+- ✅ **Měsíční spotřeba** – rozpočet do kalendářních měsíců podle dní mezi ručními odečty; samostatné grafy pro elektřinu a FVE (kWh), plyn a vodu (m³), každý s jednou osou; najetí myší zvýrazní stejný měsíc ve všech grafech; tabulka hodnot
 - ✅ **Stavy měřičů** – průběh stavů měřičů u všech záznamů, odhady jako duté body
 - ✅ **Meziroční porovnání** – spotřeba po kalendářních letech ve sbalitelné kartě pod grafy (výchozí sbalená); rozpracovaný rok se srovnává se stejným obdobím loňska, u FVE je vyšší výroba „lepší“
 - ✅ **Chybějící data** – návrhy odhadů pro měsíce bez odečtu, přehled mezer, které automaticky doplnit nejde, a kontrola uložených odhadů s hromadným přepočtem
@@ -42,7 +42,7 @@ Výpočty jsou v jednom modulu `app/services/vypocty.py` (čisté funkce pokryt�
 - **Ruční odečty vs. odhady** – statistiky (měsíce, roky, anomálie) vycházejí jen z ručních odečtů. Uložené odhady (`source = true`) se projeví jen v přehledu (stav a rozdíl u řádku s odhadem) a v exportu CSV, z výpočtů přebírají jen příznak výměny měřiče. Zastaralý odhad tak grafy ani meziroční porovnání nezkreslí.
 - **Rozpočet podle dní** – spotřeba mezi dvěma ručními odečty se rozloží rovnoměrně na dny intervalu `[od, do)` a sečte do kalendářních měsíců a let. Interval 1. 12. → 1. 1. tak patří do prosince.
 - **Úplné měsíce** – v měsíčním grafu je hodnota jen u měsíce, který je pro daný měřič pokrytý celý. Probíhající měsíc se ukáže až po dalším odečtu, období grafu (3 měsíce až 3 roky) se počítá v úplných měsících.
-- **Dopočtené měsíce** – měsíc spočtený z intervalu, ve kterém leží celý kalendářní měsíc bez ručního odečtu, je označený jako dopočtený: v grafu světlejší sloupec, v tabulce hodnot i v meziročním porovnání „≈“. Při řídkých odečtech je takových měsíců většina (viz Známá omezení).
+- **Dopočtené měsíce** – měsíc spočtený z intervalu, ve kterém leží celý kalendářní měsíc bez ručního odečtu, je označený jako dopočtený: v popisku grafu „(odhad)“, v tabulce hodnot i v meziročním porovnání „≈“. Při řídkých odečtech je takových měsíců většina (viz Známá omezení).
 - **Výměna měřiče** – interval končící odečtem s příznakem výměny není spotřeba. Měsíc, do kterého zasahuje, je u daného měřiče prázdný, a rok s výměnou nejde meziročně srovnat.
 - **FVE** – počítadlo je kumulativní; hodnota 0 znamená „neevidováno“. Ve statistikách se nula přemostí k další nenulové hodnotě, v tabulce rozdíl zůstane prázdný.
 - **Anomálie** – pokles stavu mezi ručními odečty bez příznaku výměny se ze součtů nevyhazuje (překlep se vyruší s dalším nafouknutým intervalem). Před uložením na pokles upozorní kontrola návaznosti, v přehledu je záporný rozdíl červeně a JSON API grafů ho vrací v poli `anomalie`.

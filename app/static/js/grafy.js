@@ -12,6 +12,8 @@
 
     var zdroj = null;
     var grafy = [];
+    // Index měsíce/záznamu pod myší – zvýrazní se ve všech grafech najednou
+    var aktivni = null;
     var cislo = new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 1 });
 
     function token(nazev) {
@@ -36,10 +38,11 @@
             label: hodnoty.label,
             klic: meric.key,
             data: hodnoty.hodnoty,
-            // Měsíce dopočtené z delšího intervalu bez odečtu jsou světlejší
+            // Při najetí myší zůstane plný jen sloupec pod kurzorem, ostatní se ztlumí
             backgroundColor: mesice
-                ? function (c) { return odhad(c.dataIndex) ? sPruhlednosti(barva, 0.45) : barva; }
+                ? function (c) { return aktivni !== null && c.dataIndex !== aktivni ? sPruhlednosti(barva, 0.35) : barva; }
                 : barva,
+            hoverBackgroundColor: barva,
             borderColor: barva,
             borderWidth: mesice ? 0 : 2,
             borderRadius: mesice ? 4 : 0,
@@ -61,9 +64,29 @@
         };
     }
 
+    // Zvýraznění stejného indexu ve všech grafech: ztlumení ostatních sloupců a tooltip
+    function zvyraznit(index) {
+        if (index === aktivni) return;
+        aktivni = index;
+        grafy.forEach(function (graf) {
+            var prvky = [];
+            if (index !== null) {
+                graf.data.datasets.forEach(function (rada, i) {
+                    if (rada.data[index] !== null && rada.data[index] !== undefined) {
+                        prvky.push({ datasetIndex: i, index: index });
+                    }
+                });
+            }
+            graf.setActiveElements(prvky);
+            graf.tooltip.setActiveElements(prvky, { x: 0, y: 0 });
+            graf.update('none');
+        });
+    }
+
     function vykreslit() {
         grafy.forEach(function (graf) { graf.destroy(); });
         grafy = [];
+        aktivni = null;
 
         var mesice = zdroj.rezim === 'mesice';
         var text = token('--color-text-light');
@@ -82,6 +105,9 @@
                     maintainAspectRatio: false,
                     animation: { duration: 250 },
                     interaction: { mode: 'index', intersect: false },
+                    onHover: function (udalost, prvky) {
+                        zvyraznit(prvky.length ? prvky[0].index : null);
+                    },
                     plugins: {
                         // Jedna řada legendu nepotřebuje, název nese nadpis karty
                         // Značka řady má barvu řady: u sloupců zaoblený čtverec, u čar krátká čára
@@ -165,6 +191,11 @@
         }
         zdroj = JSON.parse(data.textContent);
         vykreslit();
+
+        // Po odjetí myši z grafu zvýraznění zrušit (canvasy se při překreslení nemění)
+        document.querySelectorAll('canvas[data-graf]').forEach(function (canvas) {
+            canvas.addEventListener('mouseleave', function () { zvyraznit(null); });
+        });
 
         // Překreslit při přepnutí motivu v zápatí i při změně motivu systému
         new MutationObserver(vykreslit).observe(document.documentElement, {
