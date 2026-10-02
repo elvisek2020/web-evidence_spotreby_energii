@@ -21,6 +21,8 @@ class Meter:
     zero_is_missing: bool = False
     # Vyšší hodnota je dobrá zpráva (výroba), u spotřeby naopak
     vyssi_je_lepsi: bool = False
+    # Ikona z templates/_icons.html před polem ve formuláři odečtu
+    ikona: str = "zap"
 
     @property
     def flag(self) -> str:
@@ -41,13 +43,13 @@ class Meter:
 # Barvy (sloty) jsou z validované kategorické palety: VT, NT a FVE sdílejí graf,
 # proto dostaly první tři sloty, které projdou kontrolou rozlišitelnosti ve dvojicích
 METERS = (
-    Meter("elektromer_vysoky", "Elektroměr vysoký tarif", "El. vysoký", "kWh", 1, "elektrina"),
-    Meter("elektromer_nizky", "Elektroměr nízký tarif", "El. nízký", "kWh", 2, "elektrina"),
-    Meter("plynomer", "Plynoměr", "Plyn", "m³", 4, "plyn"),
-    Meter("vodomer", "Vodoměr", "Voda", "m³", 7, "voda"),
+    Meter("elektromer_vysoky", "Elektroměr vysoký tarif", "El. vysoký", "kWh", 1, "elektrina", ikona="sun"),
+    Meter("elektromer_nizky", "Elektroměr nízký tarif", "El. nízký", "kWh", 2, "elektrina", ikona="moon"),
+    Meter("plynomer", "Plynoměr", "Plyn", "m³", 4, "plyn", ikona="flame"),
+    Meter("vodomer", "Vodoměr", "Voda", "m³", 7, "voda", ikona="droplet"),
     Meter(
         "fve", "Počítadlo FVE", "FVE", "kWh", 3, "elektrina",
-        zero_is_missing=True, vyssi_je_lepsi=True,
+        zero_is_missing=True, vyssi_je_lepsi=True, ikona="solar-panel",
     ),
 )
 

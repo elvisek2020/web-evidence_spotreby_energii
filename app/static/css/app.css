@@ -2669,3 +2669,27 @@ details.card[open] > summary.card-header::after {
 .napoveda li + li {
     margin-top: var(--space-2);
 }
+
+/* Pole stavu měřiče s ikonou měřiče v barvě jeho řady v grafech */
+.pole-s-ikonou {
+    position: relative;
+}
+
+.pole-s-ikonou > .icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-light);
+    pointer-events: none;
+}
+
+.pole-s-ikonou > .input {
+    padding-left: 2.75rem;
+}
+
+.pole-s-ikonou--1 > .icon { color: var(--color-series-1); }
+.pole-s-ikonou--2 > .icon { color: var(--color-series-2); }
+.pole-s-ikonou--3 > .icon { color: var(--color-series-3); }
+.pole-s-ikonou--4 > .icon { color: var(--color-series-4); }
+.pole-s-ikonou--7 > .icon { color: var(--color-series-7); }
