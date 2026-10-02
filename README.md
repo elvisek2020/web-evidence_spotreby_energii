@@ -30,9 +30,9 @@ Aplikace je určená pro domácnost, která chce mít přehled o vývoji spotře
 ### Základní workflow
 
 1. **Nový odečet** – v záložce „Evidovat“ jsou pole předvyplněná posledním ručním odečtem; zkontrolujte datum, přepište stavy, které se změnily (FVE neevidujete = 0), a uložte tlačítkem nebo Ctrl+S / ⌘S. Když stav nenavazuje na okolní ruční odečty, formulář se vrátí s varováním a volbami *Uložit přesto* a *Uložit jako výměnu měřiče* – nebo hodnoty opravte a uložte znovu.
-2. **Přehled** – na hlavní stránce jsou záznamy od nejnovějšího s rozdíly. Filtr „Jen odečty“ skryje odhady a u rozdílu ukáže délku intervalu. Tlačítkem „Export CSV“ stáhnete všechny záznamy pro Excel.
+2. **Přehled** – v záložce „Přehled“ (`/prehled`) jsou záznamy od nejnovějšího s rozdíly. Filtr „Jen odečty“ skryje odhady a u rozdílu ukáže délku intervalu. Tlačítkem „Export CSV“ stáhnete všechny záznamy pro Excel.
 3. **Oprava a výměna měřiče** – v editaci záznamu opravíte hodnoty nebo označíte měřič, který byl u odečtu vyměněn (příznak patří na první odečet nového měřiče).
-4. **Grafy** – měsíční spotřeba nebo stavy měřičů za zvolené období, pod nimi sbalitelná tabulka hodnot a meziroční porovnání.
+4. **Grafy** – úvodní stránka aplikace: měsíční spotřeba nebo stavy měřičů za zvolené období, pod nimi sbalitelná tabulka hodnot a meziroční porovnání.
 5. **Chybějící data** – vytvořte odhady pro měsíce bez odečtu a zkontrolujte, že uložené odhady odpovídají odečtům.
 
 ## 🧮 Jak aplikace počítá
@@ -184,11 +184,11 @@ web-evidence_spotreby_energii/
 
 **HTML stránky:**
 
-- `GET /` – přehled (parametry `strana`, `jen_odecty=1`)
+- `GET /`, `GET /grafy` – grafy a meziroční porovnání, úvodní stránka (parametry `rezim=mesice|stavy`, `obdobi`)
+- `GET /prehled` – přehled záznamů (parametry `strana`, `jen_odecty=1`)
 - `GET /evidovat`, `POST /evidovat` – nový odečet (pole formuláře, volitelně `potvrzeni=presto|vymena`)
 - `GET /edit/{id}`, `POST /edit/{id}` – úprava záznamu
 - `POST /smazat/{id}` – smazání (pole `zpet` = návratová adresa v rámci aplikace)
-- `GET /grafy` – grafy a meziroční porovnání (parametry `rezim=mesice|stavy`, `obdobi`)
 - `GET /missing-data` – chybějící data a kontrola odhadů
 - `POST /missing-data/vytvorit` (pole `datum`), `POST /missing-data/vytvorit-vse`, `POST /missing-data/prepocet`
 
@@ -268,7 +268,7 @@ Velikost: akce stránky a karet mají normální výšku (44 px), akce v řádc�
 Zarovnání: tlačítka a skupiny tlačítek jsou vždy **vpravo** – akce v hlavičce stránky (i po zalomení na mobilu), patičky karet, volby ve varování, filtry i stránkování – a hlavní akce je poslední, úplně vpravo, stejně jako v potvrzovacím modalu (Zrušit · Uložit). Pravidlo je v sekci aplikace v `app.css`, takže platí i pro nová tlačítka. Výjimky: záložky druhu grafu (navigace), prázdné stavy (centrované podle standardu) a přepínač motivu v zápatí.
 
 - Stránka = `.page-header` s `h1.page-title` a sekce v `.card`; titulek okna „Stránka — Evidování spotřeby“.
-- Menu: čtyři záložky v hlavičce, na mobilu spodní lišta; aktivní záložku určuje backend (`current_tab`).
+- Menu: čtyři záložky v hlavičce v pořadí Grafy (úvodní stránka `/`) · Evidovat · Přehled · Chybějící data, na mobilu spodní lišta; aktivní záložku určuje backend (`current_tab`).
 - Potvrzení mazání a hromadných akcí přes `data-confirm` na formuláři; výsledek akce jako alert po přesměrování.
 - Ikony jsou inline SVG z makra `templates/_icons.html`, opakované části v `templates/_macros.html` (alert, prázdný stav, pole měřiče, stránkování).
 - Grafy: každý graf jedna osa a jedna jednotka, barvy řad z validované kategorické palety (tokeny `--color-series-*`), tabulka hodnot jako alternativa ke grafu.

@@ -5,7 +5,7 @@
 {% block title %}Upravit záznam — {{ app_name }}{% endblock %}
 
 {% block content %}
-<a href="/" class="back-link">{{ icon('arrow-left', 16) }}Přehled</a>
+<a href="/prehled" class="back-link">{{ icon('arrow-left', 16) }}Přehled</a>
 
 <div class="page-header">
     <div class="page-header-text">
@@ -18,7 +18,7 @@
         <form method="post" action="/smazat/{{ zaznam.id }}" data-submit-once
               data-confirm="Záznam z {{ zaznam.datum|datum_kratke }} bude trvale smazán.{% if not zaznam.source %} Odhady v jeho okolí se přepočítají.{% endif %}"
               data-confirm-title="Smazat záznam?" data-confirm-ok="Smazat" data-confirm-danger>
-            <input type="hidden" name="zpet" value="/">
+            <input type="hidden" name="zpet" value="/prehled">
             <button type="submit" class="btn btn-danger-ghost">{{ icon('trash', 18) }}Smazat záznam</button>
         </form>
     </div>

@@ -41,8 +41,8 @@
 {% if chybi_odecet %}{{ alert('info', 'Za ' ~ aktualni_mesic ~ ' zatím chybí odečet.') }}{% endif %}
 
 <div class="chips mb-4" role="group" aria-label="Filtr záznamů">
-    <a href="/" class="chip {% if not jen_odecty %}chip--active{% endif %}"{% if not jen_odecty %} aria-current="true"{% endif %}>Všechny záznamy</a>
-    <a href="/?jen_odecty=1" class="chip {% if jen_odecty %}chip--active{% endif %}"{% if jen_odecty %} aria-current="true"{% endif %}>Jen odečty</a>
+    <a href="/prehled" class="chip {% if not jen_odecty %}chip--active{% endif %}"{% if not jen_odecty %} aria-current="true"{% endif %}>Všechny záznamy</a>
+    <a href="/prehled?jen_odecty=1" class="chip {% if jen_odecty %}chip--active{% endif %}"{% if jen_odecty %} aria-current="true"{% endif %}>Jen odečty</a>
 </div>
 
 <section class="card">
@@ -109,7 +109,7 @@
     </ul>
     {% elif jen_odecty %}
         {% call empty_state('search', 'Žádné ruční odečty', 'Filtr „Jen odečty“ nenašel žádný záznam.') %}
-            <a href="/" class="btn btn-outline">Zrušit filtr</a>
+            <a href="/prehled" class="btn btn-outline">Zrušit filtr</a>
         {% endcall %}
     {% else %}
         {% call empty_state('inbox', 'Zatím tu nejsou žádné záznamy', 'Zapište první odečet měřičů – z dalších odečtů pak vzniknou grafy a přehledy.') %}

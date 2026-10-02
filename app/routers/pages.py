@@ -80,14 +80,14 @@ def okno_stranek(strana: int, stran: int) -> list[Optional[int]]:
 # --- Přehled -------------------------------------------------------------------
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.get("/prehled", response_class=HTMLResponse)
 def prehled(
     request: Request,
     strana: int = Query(1, ge=1),
     jen_odecty: bool = Query(False),
     db: Session = Depends(get_db),
 ):
-    """Hlavní stránka s přehledem záznamů"""
+    """Přehled záznamů s rozdíly"""
     zaznamy = nacti_vse(db)
     radky = vypocty.radky_s_rozdily(zaznamy, False if jen_odecty else None)
     stran = max(1, math.ceil(len(radky) / ZAZNAMU_NA_STRANU))
@@ -118,7 +118,7 @@ def prehled(
         "chybi_odecet": chybi_odecet,
         "aktualni_mesic": mesic_cz(dnes),
         # Kam se vrátit po smazání záznamu z této stránky
-        "zpet": s_parametry("/", strana=strana if strana > 1 else None, jen_odecty=1 if jen_odecty else None),
+        "zpet": s_parametry("/prehled", strana=strana if strana > 1 else None, jen_odecty=1 if jen_odecty else None),
     })
 
 
@@ -126,7 +126,7 @@ def prehled(
 def smazat(spotreba_id: int, pole: dict = Depends(formular), db: Session = Depends(get_db)):
     """Smazání záznamu z přehledu nebo z editace (potvrzuje modal data-confirm)"""
     prepocteno = smaz_zaznam(db, _nacti_zaznam(db, spotreba_id))
-    cil = bezpecna_cesta(pole.get("zpet"))
+    cil = bezpecna_cesta(pole.get("zpet"), "/prehled")
     return _presmeruj(s_parametry(cil, ok="smazano", prepocteno=prepocteno or None))
 
 
@@ -217,7 +217,7 @@ def _ulozit_odecet(request: Request, db: Session, pole: dict, zaznam: Optional[S
     except DuplicitniDatum as chyba:
         return _formular_odectu(request, db, zaznam, pole, status_code=409, duplicita=chyba.existujici_id or 0)
 
-    return _presmeruj(s_parametry("/", ok=kod, prepocteno=prepocteno or None))
+    return _presmeruj(s_parametry("/prehled", ok=kod, prepocteno=prepocteno or None))
 
 
 @router.get("/evidovat", response_class=HTMLResponse)
@@ -252,6 +252,7 @@ def edit_ulozit(request: Request, spotreba_id: int, pole: dict = Depends(formula
 # --- Grafy ---------------------------------------------------------------------
 
 
+@router.get("/", response_class=HTMLResponse)
 @router.get("/grafy", response_class=HTMLResponse)
 def grafy(
     request: Request,
@@ -259,7 +260,7 @@ def grafy(
     obdobi: str = Query("year"),
     db: Session = Depends(get_db),
 ):
-    """Měsíční spotřeba nebo stavy měřičů, meziroční porovnání"""
+    """Výchozí stránka: měsíční spotřeba nebo stavy měřičů, meziroční porovnání"""
     if rezim not in ("mesice", "stavy"):
         rezim = "mesice"
     if obdobi not in {klic for klic, *_ in grafy_data.OBDOBI}:
