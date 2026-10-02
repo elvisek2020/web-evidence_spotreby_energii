@@ -43,7 +43,7 @@
                     <input class="input" type="date" id="datum" name="datum" value="{{ hodnoty.get('datum', '') }}" max="{{ today }}" required>
                 </div>
                 {% for meter in METERS %}
-                    {{ pole_merice(meter, hodnoty.get(meter.key), napovedy.get(meter.key), cela_cisla=not zaznam) }}
+                    {{ pole_merice(meter, hodnoty.get(meter.key), napovedy.get(meter.key), cela_cisla=not zaznam, placeholder=placeholdery.get(meter.key)) }}
                 {% endfor %}
             </div>
 

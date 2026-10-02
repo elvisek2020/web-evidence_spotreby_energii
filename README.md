@@ -14,7 +14,7 @@ Aplikace je určená pro domácnost, která chce mít přehled o vývoji spotře
 
 ## ✨ Funkce
 
-- ✅ **Evidování odečtů** – stavy elektroměru (VT/NT), plynoměru, vodoměru a počítadla FVE s validací; výchozí datum je dnešek a pole jsou předvyplněná stavy posledního ručního odečtu, takže stačí přepsat, co se změnilo; nový odečet se zapisuje v celých číslech (úprava záznamu připouští setiny kvůli uloženým odhadům)
+- ✅ **Evidování odečtů** – stavy elektroměru (VT/NT), plynoměru, vodoměru a počítadla FVE s validací; výchozí datum je dnešek a v prázdných polích je jako placeholder stav posledního ručního odečtu; nový odečet se zapisuje v celých číslech (úprava záznamu připouští setiny kvůli uloženým odhadům)
 - ✅ **Kontrola návaznosti** – když je stav nižší než předchozí ruční odečet (nebo vyšší než následující), formulář se vrátí s varováním; pokles jde rovnou uložit jako výměnu měřiče
 - ✅ **Přehled** – tabulka s rozdílem oproti předchozímu záznamu (i na konci stránky), stránkování po 15 záznamech, filtr „Jen odečty“, počty odečtů a odhadů, upozornění na chybějící odečet v aktuálním měsíci a export do CSV
 - ✅ **Výměna měřiče** – příznak u jednotlivých měřičů; skok stavu se nepočítá jako spotřeba v tabulce, grafech ani meziročním porovnání
@@ -29,7 +29,7 @@ Aplikace je určená pro domácnost, která chce mít přehled o vývoji spotře
 
 ### Základní workflow
 
-1. **Nový odečet** – v záložce „Evidovat“ jsou pole předvyplněná posledním ručním odečtem; zkontrolujte datum, přepište stavy, které se změnily (FVE neevidujete = 0), a uložte tlačítkem nebo Ctrl+S / ⌘S. Když stav nenavazuje na okolní ruční odečty, formulář se vrátí s varováním a volbami *Uložit přesto* a *Uložit jako výměnu měřiče* – nebo hodnoty opravte a uložte znovu.
+1. **Nový odečet** – v záložce „Evidovat“ vyplňte datum a stavy všech měřičů – stav posledního ručního odečtu je v polích šedě jako vodítko (FVE neevidujete = 0) – a uložte tlačítkem nebo Ctrl+S / ⌘S. Když stav nenavazuje na okolní ruční odečty, formulář se vrátí s varováním a volbami *Uložit přesto* a *Uložit jako výměnu měřiče* – nebo hodnoty opravte a uložte znovu.
 2. **Přehled** – v záložce „Přehled“ (`/prehled`) jsou záznamy od nejnovějšího s rozdíly. Filtr „Jen odečty“ skryje odhady a u rozdílu ukáže délku intervalu. Tlačítkem „Export CSV“ stáhnete všechny záznamy pro Excel.
 3. **Oprava a výměna měřiče** – v editaci záznamu opravíte hodnoty nebo označíte měřič, který byl u odečtu vyměněn (příznak patří na první odečet nového měřiče).
 4. **Grafy** – úvodní stránka aplikace: měsíční spotřeba nebo stavy měřičů za zvolené období, pod nimi sbalitelná tabulka hodnot a meziroční porovnání.
@@ -290,7 +290,6 @@ Zarovnání: tlačítka a skupiny tlačítek jsou vždy **vpravo** – akce v hl
 - Ručně upravený odhad se při další změně okolních ručních odečtů přepíše – skutečný odečet je potřeba převést na ruční (v editaci zrušit „Automaticky doplněný odhad“)
 - Mezeru s výměnou měřiče je potřeba doplnit ručně, automatický návrh ji přeskočí
 - Probíhající měsíc se v měsíčním grafu ukáže až po dalším odečtu
-- Předvyplněný stav, který při evidenci nepřepíšete, se uloží beze změny (nulová spotřeba za období) – kontrola návaznosti na to neupozorní
 - Při řídkých odečtech je měsíční spotřeba jen rovnoměrný rozpočet dlouhého intervalu: sezónní průběh (topení plynem, výroba FVE) se vyrovná a měsíce jsou označené „≈“. Stejně se podle dní dělí interval přes přelom roku, což ovlivní roční součty i meziroční srovnání. Přesné měsíce dají odečty jednou měsíčně, nejlépe kolem přelomu měsíce.
 
 ### 📚 Další zdroje

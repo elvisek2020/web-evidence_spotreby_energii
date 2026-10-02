@@ -171,13 +171,18 @@ def _formular_odectu(
     **kontext,
 ):
     sablona = "edit.html" if zaznam is not None else "evidovat.html"
+    predchozi = _predchozi_odecet(db, zaznam)
     varovani = kontext.pop("varovani", [])
     return _stranka(request, sablona, {
         "current_tab": "prehled" if zaznam is not None else "evidovat",
         "zaznam": zaznam,
         # Desetinná čárka by v poli type=number zmizela
         "hodnoty": {klic: hodnota.replace(",", ".") for klic, hodnota in hodnoty.items()},
-        "napovedy": _napovedy(_predchozi_odecet(db, zaznam)),
+        "napovedy": _napovedy(predchozi),
+        # U nového odečtu poslední ruční stavy jako placeholder (celá čísla, pole má step=1)
+        "placeholdery": {
+            meter.key: str(round(getattr(predchozi, meter.key) or 0)) for meter in METERS
+        } if predchozi is not None and zaznam is None else {},
         "today": date.today().isoformat(),
         "varovani": [popis_varovani(polozka) for polozka in varovani],
         "pokles": any(polozka.typ == "nizsi_nez_predchozi" for polozka in varovani),
@@ -222,14 +227,8 @@ def _ulozit_odecet(request: Request, db: Session, pole: dict, zaznam: Optional[S
 
 @router.get("/evidovat", response_class=HTMLResponse)
 def evidovat(request: Request, db: Session = Depends(get_db)):
-    """Formulář nového odečtu předvyplněný stavy posledního ručního odečtu – stačí přepsat, co se změnilo"""
-    hodnoty = {"datum": date.today().isoformat()}
-    predchozi = _predchozi_odecet(db, None)
-    if predchozi is not None:
-        for meter in METERS:
-            # Nový odečet se zapisuje v celých číslech (pole má step=1)
-            hodnoty[meter.key] = str(round(getattr(predchozi, meter.key) or 0))
-    return _formular_odectu(request, db, None, hodnoty)
+    """Formulář nového odečtu; stavy posledního ručního odečtu jsou v polích jako placeholder"""
+    return _formular_odectu(request, db, None, {"datum": date.today().isoformat()})
 
 
 @router.post("/evidovat", response_class=HTMLResponse)
